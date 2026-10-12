@@ -34,9 +34,22 @@ the full checklist on each track page.
 | ⚡ FastAPI | 4 (all built) |
 | 🚀 Shipping to production | 7 (01–05 built; 06 Kubernetes and 07 Traffic & the cloud need Docker for kind) |
 
-## Setup (once)
+## Start
 
-You need `uv`, Docker (OrbStack) and Node 22+. Run these in the repo folder:
+You need [uv](https://docs.astral.sh/uv/), Docker (Docker Desktop or OrbStack) and Node 22+. Then, in the repo folder:
+
+```bash
+./start.sh          # everything below, then the course app → http://localhost:8300  (Ctrl-C stops it)
+./start.sh stop     # stop Postgres and Redis when you are done (data is kept)
+```
+
+It installs the Python packages, creates `.env` from `.env.example` (add your keys, below), starts Postgres and Redis
+in Docker, builds the UI, and starts the app. Re-running only redoes what changed. Without Docker it still starts:
+labs that need Postgres or Redis say so.
+
+## Setup by hand
+
+The same steps one by one, in the repo folder:
 
 ```bash
 uv sync                                      # Python packages, in .venv
@@ -60,7 +73,7 @@ if it isn't running. Embeddings, search and retrieval evaluation run locally wit
 ## Use it
 
 ```bash
-uv run academy                  # the course app → http://localhost:8300
+./start.sh                      # or just the course app: uv run academy → http://localhost:8300
 uv run nimbus rag ingest        # ingest data/nimbus (incremental: re-runs skip unchanged chunks; --force re-embeds)
 uv run nimbus rag eval          # score retrieval on data/eval/retrieval.json
 uv run nimbus rag search "How many vacation days do employees have?"
@@ -96,6 +109,7 @@ Every setting comes from an environment variable (prefix `NIMBUS_`) or `.env`:
 ## Layout
 
 ```
+├── start.sh                 one command: packages, .env, Postgres + Redis, UI build, the app
 ├── src/nimbus/              the product
 │   ├── config.py            settings
 │   ├── llm/                 configured models per role, error classification, usage/cost, conversations
