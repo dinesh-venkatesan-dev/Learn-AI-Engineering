@@ -1,0 +1,19 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+body { @apply bg-zinc-50 text-zinc-900 antialiased dark:bg-zinc-950 dark:text-zinc-100; }
+code, pre, .font-mono { font-variant-ligatures: none; }
+
+@layer components {
+  .prose-lesson { @apply space-y-3 text-[15.5px] leading-7 text-zinc-700 dark:text-zinc-300; }
+  .prose-lesson strong { @apply font-semibold text-zinc-900 dark:text-zinc-100; }
+  .prose-lesson code { @apply rounded bg-zinc-100 px-1.5 py-0.5 font-mono text-[0.85em] text-zinc-800 dark:bg-zinc-800 dark:text-zinc-200; }
+  .prose-lesson ul { @apply list-disc space-y-1 pl-5; }
+  .prose-lesson ol { @apply list-decimal space-y-1 pl-5; }
+  .prose-lesson em { @apply text-zinc-600 dark:text-zinc-400; }
+}

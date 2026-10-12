@@ -1,0 +1,140 @@
+{
+ "about": "Data track: business questions about the Nimbus warehouse, each with a trusted query. A system is right when the rows it saw contain every value of the trusted query's first row. 'hard' questions need several queries or a looked-up fact.",
+ "questions": [
+  {
+   "id": "q01",
+   "tags": [
+    "dates",
+    "joins"
+   ],
+   "question": "How many orders did Nimbus Bandra get in September 2026?",
+   "sql": "SELECT COUNT(*) FROM orders o JOIN cafes c USING (cafe_id) WHERE c.name = 'Nimbus Bandra' AND strftime('%Y-%m', o.ordered_at) = '2026-09'"
+  },
+  {
+   "id": "q02",
+   "tags": [
+    "top N",
+    "joins"
+   ],
+   "question": "Which product sold the most units?",
+   "sql": "SELECT p.name FROM order_items oi JOIN products p USING (product_id) GROUP BY p.name ORDER BY SUM(oi.quantity) DESC LIMIT 1"
+  },
+  {
+   "id": "q03",
+   "tags": [
+    "values"
+   ],
+   "question": "How many delivery orders were cancelled?",
+   "sql": "SELECT COUNT(*) FROM orders WHERE channel = 'delivery' AND status = 'cancelled'"
+  },
+  {
+   "id": "q04",
+   "tags": [
+    "values"
+   ],
+   "question": "How many in-store orders were refunded?",
+   "sql": "SELECT COUNT(*) FROM orders WHERE channel = 'in_store' AND status = 'refunded'"
+  },
+  {
+   "id": "q05",
+   "tags": [
+    "joins"
+   ],
+   "question": "What's the average review rating at Nimbus Koramangala?",
+   "sql": "SELECT ROUND(AVG(r.rating), 2) FROM reviews r JOIN orders o USING (order_id) JOIN cafes c USING (cafe_id) WHERE c.name = 'Nimbus Koramangala'"
+  },
+  {
+   "id": "q06",
+   "tags": [
+    "definitions",
+    "dates"
+   ],
+   "question": "What was our total revenue in August 2026?",
+   "sql": "SELECT SUM(oi.quantity * oi.unit_price) FROM orders o JOIN order_items oi USING (order_id) WHERE o.status = 'completed' AND strftime('%Y-%m', o.ordered_at) = '2026-08'"
+  },
+  {
+   "id": "q07",
+   "tags": [
+    "rates",
+    "values"
+   ],
+   "question": "What was the refund rate for delivery orders?",
+   "sql": "SELECT ROUND(1.0 * SUM(status = 'refunded') / COUNT(*), 4) FROM orders WHERE channel = 'delivery'"
+  },
+  {
+   "id": "q08",
+   "tags": [
+    "definitions",
+    "dates",
+    "top N"
+   ],
+   "question": "Which café had the highest revenue last month?",
+   "sql": "SELECT c.name FROM orders o JOIN order_items oi USING (order_id) JOIN cafes c USING (cafe_id) WHERE o.status = 'completed' AND strftime('%Y-%m', o.ordered_at) = '2026-09' GROUP BY c.name ORDER BY SUM(oi.quantity * oi.unit_price) DESC LIMIT 1"
+  },
+  {
+   "id": "q09",
+   "tags": [
+    "definitions",
+    "values"
+   ],
+   "question": "What was the average order value of delivery orders?",
+   "sql": "SELECT ROUND(1.0 * SUM(oi.quantity * oi.unit_price) / COUNT(DISTINCT o.order_id), 2) FROM orders o JOIN order_items oi USING (order_id) WHERE o.status = 'completed' AND o.channel = 'delivery'"
+  },
+  {
+   "id": "q10",
+   "tags": [
+    "definitions",
+    "joins"
+   ],
+   "question": "How much revenue came from food items?",
+   "sql": "SELECT SUM(oi.quantity * oi.unit_price) FROM orders o JOIN order_items oi USING (order_id) JOIN products p USING (product_id) WHERE o.status = 'completed' AND p.category = 'food'"
+  },
+  {
+   "id": "q11",
+   "tags": [
+    "values",
+    "joins"
+   ],
+   "question": "How many orders did gold-tier customers place?",
+   "sql": "SELECT COUNT(*) FROM orders o JOIN customers cu USING (customer_id) WHERE cu.loyalty_tier = 'gold'"
+  },
+  {
+   "id": "q12",
+   "tags": [
+    "dates",
+    "top N"
+   ],
+   "question": "On which day of the week do we get the most orders?",
+   "sql": "SELECT CASE strftime('%w', ordered_at) WHEN '0' THEN 'Sunday' WHEN '1' THEN 'Monday' WHEN '2' THEN 'Tuesday' WHEN '3' THEN 'Wednesday' WHEN '4' THEN 'Thursday' WHEN '5' THEN 'Friday' ELSE 'Saturday' END FROM orders GROUP BY strftime('%w', ordered_at) ORDER BY COUNT(*) DESC LIMIT 1"
+  }
+ ],
+ "hard": [
+  {
+   "id": "h1",
+   "tags": [
+    "multi-step",
+    "definitions"
+   ],
+   "question": "Which loyalty tier has the highest average order value?",
+   "sql": "SELECT cu.loyalty_tier FROM orders o JOIN order_items oi USING (order_id) JOIN customers cu USING (customer_id) WHERE o.status = 'completed' GROUP BY cu.loyalty_tier ORDER BY 1.0 * SUM(oi.quantity * oi.unit_price) / COUNT(DISTINCT o.order_id) DESC LIMIT 1"
+  },
+  {
+   "id": "h2",
+   "tags": [
+    "multi-step",
+    "dates"
+   ],
+   "question": "Among cafés open for the whole quarter, which grew its revenue the most, in rupees, from July to September 2026?",
+   "sql": "WITH monthly AS (SELECT c.name, strftime('%m', o.ordered_at) AS m, SUM(oi.quantity * oi.unit_price) AS revenue FROM orders o JOIN order_items oi USING (order_id) JOIN cafes c USING (cafe_id) WHERE o.status = 'completed' GROUP BY c.name, m) SELECT s.name, s.revenue - j.revenue FROM monthly s JOIN monthly j ON j.name = s.name AND j.m = '07' WHERE s.m = '09' ORDER BY s.revenue - j.revenue DESC LIMIT 1"
+  },
+  {
+   "id": "h3",
+   "tags": [
+    "discovery",
+    "dates"
+   ],
+   "question": "How many orders did the Besant Nagar café get in the first calendar month it was open?",
+   "sql": "SELECT COUNT(*) FROM orders o JOIN cafes c USING (cafe_id) WHERE c.name = 'Nimbus Besant Nagar' AND strftime('%Y-%m', o.ordered_at) = '2026-08'"
+  }
+ ]
+}

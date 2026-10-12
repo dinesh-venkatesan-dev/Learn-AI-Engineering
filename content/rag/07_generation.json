@@ -1,0 +1,284 @@
+{
+ "track": "rag",
+ "id": "07",
+ "title": "Generation: grounded answers with citations",
+ "summary": "Retrieval found the right chunks; now a model has to answer from them, and only from them. This module builds the **RAG chain**, then everything that makes its answers trustworthy: a **grounded prompt** that says 'I don't know' instead of guessing, sources presented **numbered** and ordered for attention within a **token budget**, **citations** with exact quotes that code **verifies**, **follow-up questions** rewritten with the conversation, and knowing when a question belongs in **SQL** instead. Production gets an Answerer, measured against a naive prompt on answerable and unanswerable questions.",
+ "learn": [
+  "**The RAG chain**: by hand and in LCEL, returning the sources, grounding",
+  "**Prompting for RAG**: numbered sources, order ('lost in the middle'), a token budget",
+  "**Citations**: inline markers, structured quotes, and verification that catches made-up citations",
+  "**Conversational RAG**: rewriting follow-ups into standalone questions, or an agent with memory",
+  "**Structured data**: why search can't count or average, and text-to-SQL with safety rails"
+ ],
+ "flow": "question (+ history) ─rewrite─→ standalone ─Retriever─→ top chunks\n   → numbered sources, best at start and end, within a token budget\n   → model (structured): {answerable, answer with [n], citations: [{source, quote}]}\n   → verify: every quote must be in the source it cites → answer + verified citations",
+ "labs": [
+  {
+   "lab": "rag.rag-chain",
+   "icon": "⛓️",
+   "covers": [
+    "lc.l45",
+    "rag.l40"
+   ],
+   "explain": "The RAG chain **by hand** (retrieve → format → prompt → generate) and as **one LCEL chain**, returning its sources. Then the same retrieval with a **naive** and a **grounded** prompt, on questions the documents answer and ones they don't; the answer chunk at the **start, middle and end** of 25 chunks; and a **token budget**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.answer",
+     "symbol": "format_sources",
+     "why": "Production: numbered, labelled sources.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.rag.answer",
+     "symbol": "order_for_attention",
+     "why": "Best chunks at the start and the end.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.rag.answer",
+     "symbol": "fit_budget",
+     "why": "The token budget.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.citations",
+   "icon": "🔗",
+   "covers": [
+    "rag.l41"
+   ],
+   "explain": "Answers you can check: **inline [n] markers** mapped back to documents, **structured citations** with exact quotes, and **verification**: every quote must really appear in the source it cites. A forged quote shows what verification catches.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.answer",
+     "symbol": "verify",
+     "why": "Production's citation check.",
+     "notes": [
+      {
+       "match": "ok = 1 <= c.source <= len(chunks) and _norm(c.quote) in _norm(chunks[c.source - 1].page_content)",
+       "text": "The source must exist and contain the quote."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.answer",
+     "symbol": "_norm",
+     "why": "Compared the way a reader would.",
+     "notes": [
+      {
+       "match": "re.sub(r\"[|*#`]\", \" \", text)",
+       "text": "Markdown and table pipes don't make a quote different."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.conversational",
+   "icon": "💬",
+   "covers": [
+    "rag.l42"
+   ],
+   "explain": "'What about sick days?' only makes sense after 'How many days of leave do I get?'. The lab runs a three-turn conversation through the production answerer (**rewrite → retrieve → answer → remember**) and through an **agent** with a search tool and a checkpointer.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.answer",
+     "symbol": "Answerer.standalone",
+     "why": "The rewrite step.",
+     "notes": [
+      {
+       "match": "if not history:",
+       "text": "The first question needs no rewrite: no extra call."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.answer",
+     "symbol": "",
+     "why": "The prompts live at the top of the module.",
+     "notes": [
+      {
+       "match": "REWRITE = \"\"\"Rewrite the user's last question",
+       "text": "The rewrite prompt: replace vague references, keep the language."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.sql-vs-text",
+   "icon": "🧮",
+   "covers": [
+    "rag.l43"
+   ],
+   "explain": "'How many menu items are vegan?' needs every row, not the five most similar chunks. The lab loads the menu and orders into SQLite and answers three aggregate questions by **search** and by **text-to-SQL** (read-only, SELECT only, a row limit, sample rows in the schema).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m07_generation",
+     "symbol": "text_to_sql",
+     "why": "Text-to-SQL with guards.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the Nimbus answerer",
+  "summary": "Nimbus now answers, not just retrieves. The Answerer rewrites follow-ups, retrieves with the production Retriever, presents numbered sources, asks for a structured answer with quotes, and keeps only citations whose quote is really in the cited source. When the documents don't hold the answer it says so.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "rewrite",
+    "title": "Rewrite",
+    "icon": "💬",
+    "tagline": "Follow-ups become standalone",
+    "explain": "With history, one call turns 'And do I need a doctor's note for those?' into a question that stands alone. The first question of a conversation skips it.",
+    "code": [
+     {
+      "module": "nimbus.rag.answer",
+      "symbol": "Answerer.standalone",
+      "why": "The rewrite.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.answer",
+      "symbol": "remember",
+      "why": "History after each turn.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Keep the original question in the log next to the rewrite: a bad rewrite explains a bad answer.",
+     "Only the last few turns go into the rewrite prompt (6 here): cost stays flat in long chats."
+    ]
+   },
+   {
+    "id": "present",
+    "title": "Present",
+    "icon": "🗂️",
+    "tagline": "Numbered, ordered, budgeted",
+    "explain": "The retriever's chunks are numbered with their source and page, ordered so the best sit at the start and the end, and cut to a token budget. The system prompt sets the rules: only the sources, [n] after each fact, 'I don't know' when they don't say, the user's language, today's date.",
+    "code": [
+     {
+      "module": "nimbus.rag.answer",
+      "symbol": "format_sources",
+      "why": "Numbered sources.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.answer",
+      "symbol": "order_for_attention",
+      "why": "Ordering.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.answer",
+      "symbol": "fit_budget",
+      "why": "Budget.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.answer",
+      "symbol": "",
+      "why": "The grounded system prompt.",
+      "notes": [
+       {
+        "match": "- If the sources don't contain the answer, set answerable to false",
+        "text": "Refusing is an explicit field, not a phrase to detect."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Treat retrieved text as data, not instructions: a document saying 'ignore previous instructions' must not steer the answer (the guardrails from the LangChain track apply here too)."
+    ]
+   },
+   {
+    "id": "answer",
+    "title": "Answer",
+    "icon": "✍️",
+    "tagline": "Structured: answerable, answer, citations",
+    "explain": "One structured-output call returns whether the question is answerable, the answer with [n] markers, and a quote per citation. Every quote is checked against its source; unverified citations are dropped and counted in the result's steps.",
+    "code": [
+     {
+      "module": "nimbus.rag.answer",
+      "symbol": "GroundedAnswer",
+      "why": "The answer schema.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.answer",
+      "symbol": "Answerer.answer",
+      "why": "The whole answer.",
+      "notes": [
+       {
+        "match": "verified, rejected = verify(result.citations, chunks)",
+        "text": "Only verified citations reach the user."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.answer",
+      "symbol": "verify",
+      "why": "Verification.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Alert on a rising rejected-citation rate: it means the model (or a new model version) is paraphrasing or inventing sources.",
+     "Show citations as links to the source and page; users trust answers they can check."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "Naive prompt vs the answerer",
+    "lab": "rag.answer-eval",
+    "explain": "Both use the same production retriever on 45 answerable and 6 unanswerable questions. An answer is correct when it states the evidence (numbers as whole numbers); an unanswerable question is handled when the answer says it doesn't know.\n\n| | correct (answerable) | answered the unanswerable | verified citations | rejected | tokens / question | p50 |\n|---|---|---|---|---|---|---|\n| naive prompt | 0.87 | 3 of 6 | — | — | 426 | 2.2 s |\n| **answerer (production)** | 0.89 | 0 of 6 | 54 | 5 | 609 | 2.4 s |\n\nThe answerer refused all 6 unanswerable questions (the naive prompt invented answers to 3) and rejected 5 quotes that weren't in their sources. One wrong answer shows an upstream limit: the chart's Q3 revenue came out as 48, because Tesseract reads the chart as loose numbers (Module 3); the vision OCR engine fixes it.",
+    "code": [
+     {
+      "module": "academy.labs.rag.m07_generation",
+      "symbol": "evaluate_answers",
+      "why": "The evaluation.",
+      "notes": []
+     },
+     {
+      "module": "academy.labs.rag.m07_generation",
+      "symbol": "answer_correct",
+      "why": "Scoring an answer.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Add questions users asked that the documents can't answer: refusing well is half the job.",
+     "Score with a judge model for paraphrased answers (Module 9 adds LLM judges and RAGAS-style metrics)."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/rag/answer.py",
+   "role": "The Answerer: rewrite, present, structured answer, citation verification"
+  },
+  {
+   "path": "data/eval/unanswerable.json",
+   "role": "Questions the documents can't answer"
+  },
+  {
+   "path": "src/academy/labs/rag/m07_generation.py",
+   "role": "The labs"
+  },
+  {
+   "path": "tests/test_answer.py",
+   "role": "Verification, ordering, budget, source format"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Answerer tests",
+   "cmd": "uv run pytest tests/test_answer.py"
+  }
+ ]
+}

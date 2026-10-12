@@ -1,0 +1,52 @@
+{
+  "_about": "The document registry: facts about documents that aren't inside them (what a content system or SharePoint would know). Ingestion copies them into every chunk's metadata. Dates are ISO; without an entry a document is valid from the beginning, forever. access: who may read it, 'public' (customers) or 'staff'; anything not marked public is staff-only (deny by default).",
+  "handbook.md": {
+    "valid_from": "2025-01-01"
+  },
+  "handbook_2024_archived.md": {
+    "valid_from": "2024-01-01",
+    "valid_to": "2024-12-31"
+  },
+  "faq.html": {
+    "access": "public"
+  },
+  "products.txt": {
+    "access": "public"
+  },
+  "menu.csv": {
+    "access": "public"
+  },
+  "refunds_and_returns.html": {
+    "access": "public"
+  },
+  "subscriptions.txt": {
+    "access": "public"
+  },
+  "privacy_notice.md": {
+    "access": "public"
+  },
+  "cafe_bandra_west.html": {
+    "access": "public"
+  },
+  "cafe_indiranagar.html": {
+    "access": "public"
+  },
+  "cafe_park_street.html": {
+    "access": "public"
+  },
+  "franchise_faq.md": {
+    "access": "public"
+  },
+  "sustainability_report_2025.md": {
+    "access": "public"
+  },
+  "annual_report_2024.pdf": {
+    "access": "public"
+  },
+  "annual_report_2025.pdf": {
+    "access": "public"
+  },
+  "sales_chart.png": {
+    "access": "public"
+  }
+}

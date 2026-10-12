@@ -1,0 +1,12 @@
+.venv/
+.cache/
+.env
+__pycache__/
+frontend/node_modules/
+frontend/dist/
+.state/
+server/.langgraph_api/
+.pytest_cache/
+.ruff_cache/
+.DS_Store
+*.py[oc]

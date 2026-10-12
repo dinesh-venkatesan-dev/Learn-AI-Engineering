@@ -1,0 +1,69 @@
+# The course database (Postgres 17 with pgvector) and Redis (background jobs).
+#   docker compose up -d      start        docker compose down -v    delete it and its data
+name: learn-ai-course
+services:
+  postgres:
+    image: pgvector/pgvector:pg17
+    container_name: learn-ai-course-postgres
+    environment:
+      POSTGRES_USER: nimbus
+      POSTGRES_PASSWORD: nimbus
+      POSTGRES_DB: nimbus
+    ports:
+      - "127.0.0.1:5443:5432"
+    volumes:
+      - learn-ai-course-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nimbus"]
+      interval: 2s
+      retries: 15
+    mem_limit: 512m
+
+  redis:  # background jobs (FastAPI track, Module 4) and, later, caching
+    image: redis:8-alpine
+    container_name: learn-ai-course-redis
+    command: ["redis-server", "--save", "", "--appendonly", "no"]
+    ports:
+      - "127.0.0.1:6390:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      retries: 15
+    mem_limit: 128m
+
+  # The application: `docker compose --profile app up -d --build`. One image, two roles: the API and a job worker.
+  api:
+    profiles: ["app"]
+    build: .
+    image: learn-ai-course-api
+    environment:
+      NIMBUS_DATABASE_URL: postgresql+psycopg://nimbus:nimbus@postgres:5432/nimbus  # services find each other by name
+      NIMBUS_REDIS_URL: redis://redis:6379/0
+      NIMBUS_AGENT_CHECKPOINTER: postgres
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+    ports:
+      - "127.0.0.1:8000:8000"  # only the API is published
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+    mem_limit: 768m
+
+  worker:
+    profiles: ["app"]
+    image: learn-ai-course-api
+    command: ["rq", "worker", "--url", "redis://redis:6379/0", "--worker-class", "rq.worker.SimpleWorker", "--with-scheduler", "reports"]
+    environment:
+      NIMBUS_DATABASE_URL: postgresql+psycopg://nimbus:nimbus@postgres:5432/nimbus
+      NIMBUS_REDIS_URL: redis://redis:6379/0
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+    healthcheck:  # the image's HTTP check doesn't fit a worker
+      test: ["CMD", "rq", "info", "--url", "redis://redis:6379/0"]
+      interval: 10s
+    depends_on:
+      redis: {condition: service_healthy}
+    mem_limit: 512m
+
+volumes:
+  learn-ai-course-pgdata:
+    name: learn-ai-course-pgdata

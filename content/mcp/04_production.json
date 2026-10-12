@@ -1,0 +1,331 @@
+{
+ "track": "mcp",
+ "id": "04",
+ "title": "Production MCP",
+ "summary": "Running MCP servers for real users. Every HTTP request carries a token; the server checks it with the identity provider's public key and takes the caller's identity, scopes and roles from it, never from tool arguments. Notes follow the signed-in user across connections. Long tools run as background tasks. Third-party servers are pinned by fingerprint, agents get the fewest tools they need, and tool output is treated as untrusted. The servers are tested in memory and over HTTP, and deployed inside the web app across replicas. The product gets a support desk for signed-in customers that can only ever touch that customer's orders.",
+ "learn": [
+  "**Authentication** with JWTs (JWTVerifier) and the caller's identity from the token",
+  "**Authorization**: scopes and roles per tool, tool lists filtered per caller",
+  "**Per-user state** (UserSession) and **background tasks** (the tasks extension)",
+  "**Security**: tool poisoning, pinning against rug pulls, injection through tool output, least privilege",
+  "**Testing** MCP servers with pytest, and **deployment** inside FastAPI with uvicorn replicas"
+ ],
+ "flow": "customer (token) ─→ support desk (create_agent)\n  support server   stdio   menu, points, escalation, policy resource, reply prompt\n  account server   HTTP    JWT → this customer's orders, refund checks, cancellations\n  pinned tools → DESK_TOOLS only → approvals for destructive ones → checkpointer per ticket",
+ "labs": [
+  {
+   "lab": "mcp.auth",
+   "icon": "🔑",
+   "covers": [
+    "mcp.l20"
+   ],
+   "explain": "The account server over HTTP with **JWTVerifier**: no token, someone else's key, the wrong audience and an expired token all get **401** before MCP runs. With a valid token, **my_orders()** takes no customer id, another customer's order looks missing, and an agent acts **as** the signed-in customer.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.mcp.auth",
+     "symbol": "verifier",
+     "why": "The verifier.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.mcp.auth",
+     "symbol": "caller",
+     "why": "Identity from the token.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.authz",
+   "icon": "🛂",
+   "covers": [
+    "mcp.l21"
+   ],
+   "explain": "A customer, support staff with **scopes** and a manager with a **role** call **issue_refund** and **weekly_sales**; each one's **tools/list** shows only what they may use; a customer's agent told to refund is never offered the tool.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.mcp.account",
+     "symbol": "build_account_server",
+     "why": "Scopes and roles per tool.",
+     "notes": [
+      {
+       "match": "auth=require_scopes(\"orders:refund\")",
+       "text": "Only tokens with this scope may call (or see) it."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "mcp.sessions",
+   "icon": "🗒️",
+   "covers": [
+    "mcp.l22"
+   ],
+   "explain": "Notes saved with **UserSession** (injected, not in the schema), read back over a new connection, invisible to another user, used by an agent across conversations, and **lost on a second replica** with the default in-memory store.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.mcp.m04_production",
+     "symbol": "replicas_forget",
+     "why": "Two replicas, one store each.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.tasks",
+   "icon": "⏳",
+   "covers": [
+    "mcp.l23"
+   ],
+   "explain": "The weekly report as a **task**: the server advertises the tasks extension, **call_tool** waits transparently, **call_tool_task** returns a handle at once while another tool answers, progress shows in the status, and a task is **cancelled**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.mcp.m04_production",
+     "symbol": "explicit_task",
+     "why": "Start, check, collect.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.security",
+   "icon": "🛡️",
+   "covers": [
+    "mcp.l24"
+   ],
+   "explain": "A weather server's **poisoned description** makes the agent send it an order's details; **pinned fingerprints** block the changed tool; an honest reviews tool returns an attacker's instruction to **cancel an order**; with only **read-only tools** there is nothing to abuse.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.mcp.pinning",
+     "symbol": "pinned",
+     "why": "Load only reviewed tools.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.mcp.m04_production",
+     "symbol": "output_injection",
+     "why": "Injection and least privilege.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.testing",
+   "icon": "🧪",
+   "covers": [
+    "mcp.l25"
+   ],
+   "explain": "**tests/test_mcp_servers.py**: the support server **in memory**, fresh data per test, a **contract** test, the account server over HTTP with **real tokens**, and an **integration** test with a real model that runs only with -m integration.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.mcp.m04_production",
+     "symbol": "pytest_run",
+     "why": "Running the suite.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.deploy",
+   "icon": "🚀",
+   "covers": [
+    "mcp.l26"
+   ],
+   "explain": "**create_web_app()**: REST, health and MCP in one ASGI app, two **uvicorn replicas** answering any request, a legacy session failing on another replica **without stateless_http** and working with it, and **Host/Origin** checks.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.mcp.web",
+     "symbol": "create_web_app",
+     "why": "The deployed app.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.capstone",
+   "icon": "🎧",
+   "covers": [
+    "mcp.l27"
+   ],
+   "explain": "Meena's ticket over two turns: the support server over **stdio** and the account server over **HTTP with her token** in one MCPConfig, **pinned** and **least-privilege** tools, the **policy** read fresh, an **approval** for the cancellation, the ticket kept by a **checkpointer**, and her reply written with the server's **prompt**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.mcp.desk",
+     "symbol": "build_desk",
+     "why": "The desk.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: a support desk for signed-in customers",
+  "summary": "The account server runs inside the web app behind JWT sign-in, so its tools answer only for the token's customer. The support desk connects to it with the customer's token and to the support server over stdio. It loads only pinned tools, then only the ones its job needs, so the support server's get_order and cancel_order (any order id) never reach the model.",
+  "covers": [
+   "mcp.l27"
+  ],
+  "steps": [
+   {
+    "id": "sign-in",
+    "title": "Sign-in",
+    "icon": "🔑",
+    "tagline": "Identity and permissions from the token",
+    "explain": "verifier() checks signature, issuer, audience and expiry with the provider's public key. In the account server, caller() reads the token's subject: someone else's order looks exactly like a missing one. Refunds need the orders:refund scope, sales the manager role.",
+    "code": [
+     {
+      "module": "nimbus.mcp.auth",
+      "symbol": "verifier",
+      "why": "The verifier.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.mcp.account",
+      "symbol": "_visible_order",
+      "why": "Ownership, from the token.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "The public key comes from NIMBUS_JWT_PUBLIC_KEY; the private key never leaves the identity provider."
+    ]
+   },
+   {
+    "id": "deploy",
+    "title": "Deploy",
+    "icon": "🚀",
+    "tagline": "Inside the web app",
+    "explain": "create_web_app() mounts the account server at /mcp next to the REST API, stateless, with Host and Origin checks; uvicorn runs as many replicas as needed. The ops weekly report runs as a background task.",
+    "code": [
+     {
+      "module": "nimbus.mcp.web",
+      "symbol": "create_web_app",
+      "why": "The deployed app.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "User notes and tasks live in each process's memory: point session_state_store and TasksExtension at Redis before running more than one replica."
+    ]
+   },
+   {
+    "id": "pins",
+    "title": "Pins",
+    "icon": "📌",
+    "tagline": "Only reviewed tools",
+    "explain": "data/mcp/tool_pins.json holds a fingerprint of every tool a person reviewed; the desk loads only matching tools and logs the rest for a new review.",
+    "code": [
+     {
+      "module": "nimbus.mcp.pinning",
+      "symbol": "pinned",
+      "why": "The check.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Re-pin (fingerprints → save_pins) in the same pull request that changes a tool's description or arguments."
+    ]
+   },
+   {
+    "id": "desk",
+    "title": "Desk",
+    "icon": "🎧",
+    "tagline": "Least privilege, approvals, a checkpointer",
+    "explain": "build_desk keeps only DESK_TOOLS, reads the refund policy resource on every model call, pauses destructive tools for the customer, and keeps each ticket in a checkpointer. customer_reply writes the message with the server's support_reply prompt.",
+    "code": [
+     {
+      "module": "nimbus.mcp.desk",
+      "symbol": "build_desk",
+      "why": "The desk.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.mcp.desk",
+      "symbol": "desk_config",
+      "why": "Two servers, two transports.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "tests/test_mcp_servers.py runs in CI without a model; the integration test runs nightly with -m integration."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "11 requests as signed-in customers",
+    "lab": "mcp.desk-eval",
+    "explain": "6 service requests and 5 attempts at another customer's orders, each over a fresh connection with that customer's token, through the Module 3 agent (every tool of both servers) and the production desk.\n\n| | service requests right | other customers' orders seen | other customers' orders cancelled | tokens | p50 |\n|---|---|---|---|---|---|\n| Module 3 MCP agent: every tool | 6/6 | 5 | 2 | 3,821 | 4.2 s |\n| **Production desk: pinned, least privilege** | **6/6** | **0** | **0** | **2,685** | **4.1 s** |\n\nThrough the Module 3 agent, a signed-in customer read all three other customers' orders they asked about (\"my friend Farah\", \"I work at Nimbus support\") and cancelled two orders that weren't theirs: the support server's get_order and cancel_order take any order id. The desk only has the account server's tools, which answer for the token's customer, so every attempt met \"No order … on your account\". Both served all 6 genuine requests; the desk used 30% fewer tokens because its prompt carries 7 tool definitions instead of 13.",
+    "code": [
+     {
+      "module": "nimbus.mcp.desk_eval",
+      "symbol": "run_drill",
+      "why": "The drill.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.mcp.desk_eval",
+      "symbol": "score",
+      "why": "The scores.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Add every new kind of request a customer could abuse to data/eval/mcp_desk_drill.json."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/mcp/auth.py",
+   "role": "Tokens: the verifier, the caller's identity, a dev identity provider"
+  },
+  {
+   "path": "src/nimbus/mcp/account.py",
+   "role": "The signed-in account server"
+  },
+  {
+   "path": "src/nimbus/mcp/web.py",
+   "role": "REST + MCP in one ASGI app"
+  },
+  {
+   "path": "src/nimbus/mcp/pinning.py",
+   "role": "Tool fingerprints"
+  },
+  {
+   "path": "data/mcp/tool_pins.json",
+   "role": "The reviewed fingerprints"
+  },
+  {
+   "path": "src/nimbus/mcp/desk.py",
+   "role": "The support desk for signed-in customers"
+  },
+  {
+   "path": "src/nimbus/mcp/desk_eval.py",
+   "role": "Its evaluation"
+  },
+  {
+   "path": "tests/test_mcp_servers.py",
+   "role": "The MCP server tests"
+  },
+  {
+   "path": "src/academy/labs/mcp/m04_production.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Server tests",
+   "cmd": "uv run pytest tests/test_mcp_servers.py"
+  },
+  {
+   "label": "With a real model",
+   "cmd": "uv run pytest -m integration tests/test_mcp_servers.py"
+  },
+  {
+   "label": "Run the web app (2 replicas)",
+   "cmd": "NIMBUS_JWT_PUBLIC_KEY=\"$(cat key.pub)\" uv run uvicorn nimbus.mcp.web:create_web_app --factory --workers 2"
+  }
+ ]
+}

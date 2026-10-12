@@ -1,0 +1,248 @@
+{
+ "track": "data",
+ "id": "03",
+ "title": "Analytics assistants",
+ "summary": "Beyond one query: statistics in pandas, charts drawn by your code from a model's spec, a **semantic layer** of governed metrics so every answer uses the same definitions, data in CSV, Excel and Parquet files through DuckDB, and the warehouse in PostgreSQL where the database itself enforces read-only access, hidden columns and row-level security. The capstone puts it together: an analytics assistant that reaches for governed metrics first, SQL only when needed, draws charts and has every number checked.",
+ "learn": [
+  "**pandas** for statistics, with model code in a separate process (no keys, a timeout)",
+  "**Charts**: a ChartSpec from the model, rendering and data checks in code",
+  "**A semantic layer**: typed metrics and dimensions, the same numbers every time",
+  "**Files with DuckDB**: CSV, Excel and Parquet in SQL, guarded at two levels",
+  "**PostgreSQL** enforcing the rules: a read-only role, column grants, row-level security"
+ ],
+ "flow": "question ─→ analytics assistant\n  1. get_metric          governed metrics (the semantic layer)\n  2. describe / run_query only when no metric fits (guarded)\n  3. chart_metric / make_chart   drawn by our code\n  answer ─→ grounding check: every number must appear in a tool output",
+ "labs": [
+  {
+   "lab": "data.pandas",
+   "icon": "🐼",
+   "covers": [
+    "data.l10"
+   ],
+   "explain": "A weekday pattern and a correlation, worked out by an agent that **loads DataFrames with SQL** and **runs pandas in a separate process**; the weekday answer **checked in plain Python**; and what model code can't do there (read the API key, run forever).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.data.analysis",
+     "symbol": "AnalysisSession",
+     "why": "The session.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "data.charts",
+   "icon": "📈",
+   "covers": [
+    "data.l11"
+   ],
+   "explain": "Three requests → three **ChartSpecs** → PNGs drawn by our renderer; the refund-rate chart's data **checked against a trusted query**; the **partial first and last weeks**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.data.charts",
+     "symbol": "render",
+     "why": "Drawing in the house style.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.data.charts",
+     "symbol": "check_data",
+     "why": "Checking a chart's data.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "data.metrics",
+   "icon": "📐",
+   "covers": [
+    "data.l12"
+   ],
+   "explain": "The **semantic layer**: metrics, dimensions and the SQL they build; one question in three phrasings through **get_metric** and through free SQL, and whether the number came out of a tool or the model's arithmetic; a **rule the layer enforces**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.data.metrics",
+     "symbol": "metric_sql",
+     "why": "The layer.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "data.files",
+   "icon": "🗃️",
+   "covers": [
+    "data.l13"
+   ],
+   "explain": "Supplier deliveries (**CSV**), the staff rota (**Excel**) and the finance export (**Parquet**) in DuckDB SQL; the files guard, and the connection that **can't read outside the data folder** even without the guard; an agent answering across sources.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.data.files",
+     "symbol": "check_duckdb",
+     "why": "The guard.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.data.files",
+     "symbol": "connect",
+     "why": "Locked to the data folder.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "data.postgres",
+   "icon": "🐘",
+   "covers": [
+    "data.l14"
+   ],
+   "explain": "The warehouse in the course **Postgres** with a locked-down **nimbus_agent** role: reads yes, writes no, the name column no, long queries stopped; **row-level security** giving two café managers two different answers to the same SQL. Needs `docker compose up -d`.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.data.postgres",
+     "symbol": "load_and_secure",
+     "why": "The role, grants and policy.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the Nimbus analytics assistant",
+  "summary": "The analytics assistant answers from governed metrics first, so revenue, AOV and refund rate mean the same in every answer and chart. It falls back to guarded SQL only when no metric fits, draws charts with our code, and every number in its answer is checked against the tool outputs. In production it connects to Postgres as nimbus_agent, so the database enforces what the Python guards check.",
+  "covers": [
+   "data.l15"
+  ],
+  "steps": [
+   {
+    "id": "metrics",
+    "title": "Metrics",
+    "icon": "📐",
+    "tagline": "Governed definitions",
+    "explain": "METRICS and DIMENSIONS in code; get_metric takes typed choices and metric_sql builds the query, refusing splits that would mislead.",
+    "code": [
+     {
+      "module": "nimbus.data.metrics",
+      "symbol": "metric_sql",
+      "why": "The layer.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "New metrics go through code review, like any business rule."
+    ]
+   },
+   {
+    "id": "assistant",
+    "title": "Assistant",
+    "icon": "📊",
+    "tagline": "Metrics first, SQL when needed, charts",
+    "explain": "AnalyticsAssistant: get_metric and chart_metric first; describe_table and run_query only when no metric fits; make_chart for anything else. chart_metric draws a metric with its own SQL, so the chart and the answer agree.",
+    "code": [
+     {
+      "module": "nimbus.data.assistant",
+      "symbol": "AnalyticsAssistant",
+      "why": "The assistant.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Charts are PNGs from our renderer; a web front end would take the same ChartSpec as data."
+    ]
+   },
+   {
+    "id": "checks",
+    "title": "Checks",
+    "icon": "🔎",
+    "tagline": "Every number from a tool",
+    "explain": "grounding_check flags numbers in the answer that appear in no tool output (years and small counts aside).",
+    "code": [
+     {
+      "module": "nimbus.data.assistant",
+      "symbol": "grounding_check",
+      "why": "The check.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Show flagged numbers to the reader, or retry; claims in words need a judge (LangSmith track)."
+    ]
+   },
+   {
+    "id": "database",
+    "title": "Database",
+    "icon": "🐘",
+    "tagline": "The rules in Postgres too",
+    "explain": "load_and_secure creates nimbus_agent: read-only, a 2 s statement timeout, no access to customer names, and row-level security on orders keyed by app.cafe_id, which the app sets from the signed-in manager.",
+    "code": [
+     {
+      "module": "nimbus.data.postgres",
+      "symbol": "as_agent",
+      "why": "Running as the agent's role.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "The agent's connection string uses nimbus_agent, never the admin role."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "6 analytics questions",
+    "lab": "data.assistant-eval",
+    "explain": "Monthly revenue, the worst refund rate, the weakest AOV, a filtered revenue, ratings by channel and a chart, through a SQL-only assistant and the metrics-first one.\n\n| | right numbers (6) | numbers not in any tool output | model calls | tokens | p50 |\n|---|---|---|---|---|---|\n| SQL tools only (Module 2 agent + charts) | 3/6 | 1 | 3.33 | 3,717 | 8.0 s |\n| **Analytics assistant: metrics first** | **6/6** | **0** | **2.50** | **3,419** | **5.3 s** |\n\nWith SQL only, the assistant got the weakest café right but its AOV wrong (₹362.41 instead of ₹367.51), gave ₹102,070 instead of ₹89,260 for September's delivery revenue, and computed a rating difference (0.05) that no query returned. Metrics first, five of six questions were one get_metric call; the ratings question, which no metric covers, fell back to SQL as instructed. The grounding check covers numbers; claims in words still need a reader or a judge.",
+    "code": [
+     {
+      "module": "academy.labs.data.m03_analytics",
+      "symbol": "right_in",
+      "why": "Right numbers.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Every question a manager asks twice belongs in the eval set, with its trusted query."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/data/analysis.py",
+   "role": "pandas in a separate process"
+  },
+  {
+   "path": "src/nimbus/data/charts.py",
+   "role": "ChartSpec, the renderer, data checks"
+  },
+  {
+   "path": "src/nimbus/data/metrics.py",
+   "role": "The semantic layer"
+  },
+  {
+   "path": "src/nimbus/data/files.py",
+   "role": "Files with DuckDB"
+  },
+  {
+   "path": "src/nimbus/data/postgres.py",
+   "role": "The warehouse in Postgres, secured"
+  },
+  {
+   "path": "src/nimbus/data/assistant.py",
+   "role": "The analytics assistant"
+  },
+  {
+   "path": "src/academy/labs/data/m03_analytics.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Start the course database (for the Postgres lab)",
+   "cmd": "docker compose up -d"
+  },
+  {
+   "label": "Start the academy",
+   "cmd": "uv run academy"
+  }
+ ]
+}

@@ -1,0 +1,222 @@
+{
+ "about": "Production Module 4: support replies. smoke: what the reply must keep doing (no promises, hand over to a teammate). hard: facts customers ask about. must_contain / must_not are regexes; answer is a reference for judges.",
+ "version": "v1",
+ "examples": [
+  {
+   "id": "s1",
+   "split": "smoke",
+   "inputs": {
+    "message": "My cold brew arrived warm. What can I do?",
+    "tone": "warm"
+   },
+   "reference_outputs": {
+    "must_contain": [
+     "(?i)sorry|apolog"
+    ],
+    "must_not": "(?i)\\bwe(?:'ll| will) (?:refund|send|deliver|replace)|refund(?:ed)? (?:has been|is) (?:issued|processed)|by tomorrow|within \\d+ (?:hours|business days)",
+    "answer": "Apologise; a teammate will check and help."
+   },
+   "metadata": {
+    "source": "curated"
+   }
+  },
+  {
+   "id": "s2",
+   "split": "smoke",
+   "inputs": {
+    "message": "I want a refund for my opened bag NOW!",
+    "tone": "warm"
+   },
+   "reference_outputs": {
+    "must_contain": [
+     "(?i)teammate|team|colleague"
+    ],
+    "must_not": "(?i)\\bwe(?:'ll| will) (?:refund|send|deliver|replace)|refund(?:ed)? (?:has been|is) (?:issued|processed)|by tomorrow|within \\d+ (?:hours|business days)",
+    "answer": "Apologise; a teammate will check eligibility; no promise."
+   },
+   "metadata": {
+    "source": "curated"
+   }
+  },
+  {
+   "id": "s3",
+   "split": "smoke",
+   "inputs": {
+    "message": "Can you deliver my beans tomorrow?",
+    "tone": "warm"
+   },
+   "reference_outputs": {
+    "must_contain": [
+     "(?i)teammate|team|check"
+    ],
+    "must_not": "(?i)\\bwe(?:'ll| will) (?:refund|send|deliver|replace)|refund(?:ed)? (?:has been|is) (?:issued|processed)|by tomorrow|within \\d+ (?:hours|business days)",
+    "answer": "A teammate will check delivery options; no promised date."
+   },
+   "metadata": {
+    "source": "curated"
+   }
+  },
+  {
+   "id": "s4",
+   "split": "smoke",
+   "inputs": {
+    "message": "Thanks, the coffee was great!",
+    "tone": "warm"
+   },
+   "reference_outputs": {
+    "must_contain": [
+     "(?i)thank|glad|happy"
+    ],
+    "must_not": "(?i)\\bwe(?:'ll| will) (?:refund|send|deliver|replace)|refund(?:ed)? (?:has been|is) (?:issued|processed)|by tomorrow|within \\d+ (?:hours|business days)",
+    "answer": "Thank them warmly."
+   },
+   "metadata": {
+    "source": "curated"
+   }
+  },
+  {
+   "id": "s5",
+   "split": "smoke",
+   "inputs": {
+    "message": "Is my order NC-12093 delayed?",
+    "tone": "warm"
+   },
+   "reference_outputs": {
+    "must_contain": [
+     "(?i)teammate|team|check"
+    ],
+    "must_not": "(?i)\\bwe(?:'ll| will) (?:refund|send|deliver|replace)|refund(?:ed)? (?:has been|is) (?:issued|processed)|by tomorrow|within \\d+ (?:hours|business days)",
+    "answer": "A teammate will check the order; no invented status."
+   },
+   "metadata": {
+    "source": "curated"
+   }
+  },
+  {
+   "id": "s6",
+   "split": "smoke",
+   "inputs": {
+    "message": "Please cancel my subscription.",
+    "tone": "warm"
+   },
+   "reference_outputs": {
+    "must_contain": [
+     "(?i)teammate|team|help"
+    ],
+    "must_not": "(?i)\\bwe(?:'ll| will) (?:refund|send|deliver|replace)|refund(?:ed)? (?:has been|is) (?:issued|processed)|by tomorrow|within \\d+ (?:hours|business days)",
+    "answer": "A teammate will help cancel it."
+   },
+   "metadata": {
+    "source": "curated"
+   }
+  },
+  {
+   "id": "h1",
+   "split": "hard",
+   "inputs": {
+    "message": "How much is a cold brew?",
+    "tone": "warm"
+   },
+   "reference_outputs": {
+    "must_contain": [
+     "200"
+    ],
+    "must_not": "(?i)\\bwe(?:'ll| will) (?:refund|send|deliver|replace)|refund(?:ed)? (?:has been|is) (?:issued|processed)|by tomorrow|within \\d+ (?:hours|business days)",
+    "answer": "A cold brew costs ₹200."
+   },
+   "metadata": {
+    "source": "curated"
+   }
+  },
+  {
+   "id": "h2",
+   "split": "hard",
+   "inputs": {
+    "message": "Is the Oat Latte vegan?",
+    "tone": "warm"
+   },
+   "reference_outputs": {
+    "must_contain": [
+     "(?i)\\byes\\b|is vegan|oat milk"
+    ],
+    "must_not": "(?i)\\bwe(?:'ll| will) (?:refund|send|deliver|replace)|refund(?:ed)? (?:has been|is) (?:issued|processed)|by tomorrow|within \\d+ (?:hours|business days)",
+    "answer": "Yes, the Oat Latte is vegan (made with oat milk)."
+   },
+   "metadata": {
+    "source": "curated"
+   }
+  },
+  {
+   "id": "h3",
+   "split": "hard",
+   "inputs": {
+    "message": "When do loyalty points expire?",
+    "tone": "warm"
+   },
+   "reference_outputs": {
+    "must_contain": [
+     "12|twelve"
+    ],
+    "must_not": "(?i)\\bwe(?:'ll| will) (?:refund|send|deliver|replace)|refund(?:ed)? (?:has been|is) (?:issued|processed)|by tomorrow|within \\d+ (?:hours|business days)",
+    "answer": "Points expire 12 months after they are earned."
+   },
+   "metadata": {
+    "source": "curated"
+   }
+  },
+  {
+   "id": "h4",
+   "split": "hard",
+   "inputs": {
+    "message": "How long does delivery to Mumbai take?",
+    "tone": "warm"
+   },
+   "reference_outputs": {
+    "must_contain": [
+     "\\b2\\b|two"
+    ],
+    "must_not": "(?i)\\bwe(?:'ll| will) (?:refund|send|deliver|replace)|refund(?:ed)? (?:has been|is) (?:issued|processed)|by tomorrow|within \\d+ (?:hours|business days)",
+    "answer": "Deliveries in Mumbai take 2 days."
+   },
+   "metadata": {
+    "source": "curated"
+   }
+  },
+  {
+   "id": "h5",
+   "split": "hard",
+   "inputs": {
+    "message": "How long do I have to return a bag?",
+    "tone": "warm"
+   },
+   "reference_outputs": {
+    "must_contain": [
+     "14|fourteen"
+    ],
+    "must_not": "(?i)\\bwe(?:'ll| will) (?:refund|send|deliver|replace)|refund(?:ed)? (?:has been|is) (?:issued|processed)|by tomorrow|within \\d+ (?:hours|business days)",
+    "answer": "Unopened bags can be returned within 14 days of delivery."
+   },
+   "metadata": {
+    "source": "curated"
+   }
+  },
+  {
+   "id": "h6",
+   "split": "hard",
+   "inputs": {
+    "message": "How many points do I get per ₹100 spent?",
+    "tone": "warm"
+   },
+   "reference_outputs": {
+    "must_contain": [
+     "\\b10\\b|ten"
+    ],
+    "must_not": "(?i)\\bwe(?:'ll| will) (?:refund|send|deliver|replace)|refund(?:ed)? (?:has been|is) (?:issued|processed)|by tomorrow|within \\d+ (?:hours|business days)",
+    "answer": "You earn 10 points per ₹100 (1 point per ₹10)."
+   },
+   "metadata": {
+    "source": "curated"
+   }
+  }
+ ]
+}

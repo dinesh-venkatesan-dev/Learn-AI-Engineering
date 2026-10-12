@@ -1,0 +1,232 @@
+{
+ "track": "fastapi",
+ "id": "02",
+ "title": "Data, streaming & background work",
+ "summary": "The Nimbus API gets **Nimbus Notes**: notes stored with **SQLModel**, documents uploaded as text or PDF and downloaded as Markdown, chat answers about your notes **streamed** as Server-Sent Events or over a **WebSocket**, and summaries written by the model **after** the response, as a background task. Measured on a real server: what the user waits for.",
+ "learn": [
+  "**SQLModel**: tables that are also API models, a session per request, CRUD with pagination, 409 for duplicates",
+  "**Files and forms**: UploadFile, type and size limits, text from PDFs, downloads",
+  "**Streaming**: Server-Sent Events token by token, JSON Lines, time to first event",
+  "**WebSockets**: authenticate before accepting, a conversation per connection",
+  "**Background tasks**: work after the response, and their limits"
+ ],
+ "flow": "POST /notes ──→ save (SQLModel) ──→ 201 at once ──→ background: summarise with the model\nPOST /notes/upload (PDF, text) ──→ notes\nPOST /chat/stream ──→ event: sources ──→ event: token … ──→ event: done\nWS /chat/ws?token=… ──→ question ⇄ streamed answer, history per connection",
+ "labs": [
+  {
+   "lab": "api.database",
+   "icon": "🗄️",
+   "covers": [
+    "api.l10"
+   ],
+   "explain": "Notes in SQLite through the Nimbus API: **create, read, list with a filter, PATCH, delete**, and a duplicate title that becomes **409** instead of a 500; the **Base / table / Create / Public** models side by side.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.models",
+     "symbol": "Note",
+     "why": "The table.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.api.routers.notes",
+     "symbol": "save",
+     "why": "Database errors → HTTP errors.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "api.files",
+   "icon": "📎",
+   "covers": [
+    "api.l11"
+   ],
+   "explain": "A **PDF and a text file in one request** with a form field, an image refused with **415**, a file over the limit refused with **413**, and a note **downloaded** as Markdown.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.routers.notes",
+     "symbol": "upload",
+     "why": "Uploads.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.api.notes",
+     "symbol": "extract_text",
+     "why": "Text from PDFs.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "api.streaming",
+   "icon": "🌊",
+   "covers": [
+    "api.l12"
+   ],
+   "explain": "A question about two notes answered as **JSON** and as **Server-Sent Events** from a real uvicorn server: the first event, the first words and the whole answer; then a **JSON Lines** stream.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.routers.chat",
+     "symbol": "chat_stream",
+     "why": "The stream.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "api.websockets",
+   "icon": "🔁",
+   "covers": [
+    "api.l13"
+   ],
+   "explain": "A bad token **refused before accepting** (1008); a conversation over one socket where the follow-up only makes sense with the **history this connection keeps**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.routers.chat",
+     "symbol": "chat_socket",
+     "why": "The socket.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "api.background",
+   "icon": "⏱️",
+   "covers": [
+    "api.l14"
+   ],
+   "explain": "A note saved on a real server: the **201 comes back at once** and the summary is written afterwards; a **failing summary model** changes nothing for the client; an audit dependency adding its own task.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.notes",
+     "symbol": "summarize_in_background",
+     "why": "After the response.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus Notes, part 1",
+  "summary": "Notes live in the database with one model per direction; uploads become notes; chat streams sources and tokens; summaries are written in the background so saving never waits for the model.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "data",
+    "title": "Data",
+    "icon": "🗄️",
+    "tagline": "Notes with SQLModel",
+    "explain": "Note is a table with a unique (owner, title); NoteCreate, NoteUpdate and NotePublic are what clients send and see. A session per request; IntegrityError becomes 409.",
+    "code": [
+     {
+      "module": "nimbus.api.models",
+      "symbol": "Note",
+      "why": "The table.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.api.db",
+      "symbol": "get_session",
+      "why": "A session per request.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "SQLite for the course; the same models run on Postgres with a different api_database_url."
+    ]
+   },
+   {
+    "id": "files",
+    "title": "Files",
+    "icon": "📎",
+    "tagline": "Uploads and downloads",
+    "explain": "upload() checks the type (415) and reads at most limit + 1 bytes (413); PDFs are read in memory with PyMuPDF; download() sends Markdown with Content-Disposition.",
+    "code": [
+     {
+      "module": "nimbus.api.routers.notes",
+      "symbol": "upload",
+      "why": "Uploads.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Scan uploads before indexing them in production (RAG track: quarantine)."
+    ]
+   },
+   {
+    "id": "stream",
+    "title": "Stream",
+    "icon": "🌊",
+    "tagline": "Answers as they're written",
+    "explain": "POST /chat/stream sends the sources first, then tokens, then done; the WebSocket keeps a conversation per connection and checks the token before accepting.",
+    "code": [
+     {
+      "module": "nimbus.api.routers.chat",
+      "symbol": "chat_stream",
+      "why": "SSE.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.api.routers.chat",
+      "symbol": "chat_socket",
+      "why": "WebSocket.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Proxies must not buffer text/event-stream (nginx: proxy_buffering off)."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "What the user waits for",
+    "lab": "api.waits-eval",
+    "explain": "Three chat questions as JSON and as SSE, and three notes saved with the summary inline and in the background, on a real uvicorn server.\n\n| | first words on screen (p50) | whole answer (p50) | saving a note (p50) |\n|---|---|---|---|\n| JSON answer, summary written inline | 2.44 s | 2.44 s | 2.92 s |\n| **SSE answer, summary in the background** | **1.89 s** | **2.20 s** | **0.007 s** |\n\nOn short answers the stream's head start is modest (the model's own first-token time is about 1.6 s), but the sources event arrives at once, and longer answers gain more. Saving a note no longer waits for the model at all: the summary appears a few seconds later, and a failed summary is logged instead of failing the save. Measured on a real uvicorn server, after the background summaries had finished, so no request queued behind another in the rate limiter.",
+    "code": [
+     {
+      "module": "academy.labs.fastapi.m02_data_streaming",
+      "symbol": "evaluate_waits",
+      "why": "The measurement.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Background tasks are lost on restart: the Production track moves must-not-be-lost work to a queue."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/api/db.py",
+   "role": "Engine and the session dependency"
+  },
+  {
+   "path": "src/nimbus/api/models.py",
+   "role": "User and Note tables, API shapes"
+  },
+  {
+   "path": "src/nimbus/api/notes.py",
+   "role": "Text from uploads, background summaries, relevant notes"
+  },
+  {
+   "path": "src/nimbus/api/routers/notes.py",
+   "role": "CRUD, uploads, downloads"
+  },
+  {
+   "path": "src/nimbus/api/routers/chat.py",
+   "role": "JSON, SSE and WebSocket chat"
+  },
+  {
+   "path": "src/academy/labs/fastapi/m02_data_streaming.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Run the Nimbus API (then open /docs)",
+   "cmd": "uv run uvicorn nimbus.api.app:app --reload"
+  }
+ ]
+}

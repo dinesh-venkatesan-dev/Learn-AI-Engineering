@@ -1,0 +1,243 @@
+{
+ "track": "production",
+ "id": "02",
+ "title": "Caching: exact, semantic & embedding caches",
+ "summary": "Don't pay twice for the same answer. An **exact cache** answers identical requests for free, shared by every server process in Redis and normalized so case and punctuation don't matter. A **semantic cache** reuses answers to paraphrases, which is where the danger lives: near-misses that differ in one detail look identical to an embedding model. The module measures that danger, guards against it, chooses the threshold from labelled pairs, compares four stores, and replays real support traffic through every kind of cache.",
+ "learn": [
+  "**Exact caches**: set_llm_cache, what the key contains, Redis shared by every process, normalized keys",
+  "**Semantic caches**: lookup by meaning, what an entry stores, and the near-miss trap",
+  "**Guards**: an entity guard, never-cache rules, versions and TTLs, scopes",
+  "**The threshold from data**, and **stores** compared: memory, SQLite, Redis Vector Sets, pgvector",
+  "**In production**: what to cache (embeddings too), provider prompt caching, stampedes, warm-up, metrics"
+ ],
+ "flow": "question ─→ personal or time-sensitive? ──yes──→ model (never cached)\n   └─→ exact key (normalized) ──hit──→ answer\n   └─→ embed ─→ nearest in scope (Redis Vector Sets) ─→ similarity ≥ 0.75? same entities? same versions? not expired?\n         ──yes──→ answer        ──no──→ model ─→ store if cacheable",
+ "labs": [
+  {
+   "lab": "prod.exact-cache",
+   "icon": "🎯",
+   "covers": [
+    "lc.l58.1",
+    "lc.l58.2",
+    "rag.l53.3",
+    "prod.l07.1",
+    "prod.l07.2",
+    "new.l01.2"
+   ],
+   "explain": "**set_llm_cache** with an in-memory cache, what changes the key (settings, a paraphrase), and the same cache in **Redis** shared by two clients, **normalized** so case and punctuation don't matter.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.cache.exact",
+     "symbol": "RedisLLMCache",
+     "why": "The Redis cache.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.cache.exact",
+     "symbol": "normalize",
+     "why": "Normalized keys.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.semantic-cache",
+   "icon": "🧠",
+   "covers": [
+    "prod.l07.3",
+    "prod.l07.4",
+    "prod.l07.5",
+    "new.l01.3",
+    "new.l01.4",
+    "new.l01.6",
+    "new.l01.10",
+    "new.l01.11",
+    "new.l01.12"
+   ],
+   "explain": "Paraphrases reuse an answer; **'cancel NC-1002?' and 'cancel NC-1003?'** do too without the guards; personal and time-sensitive answers are never stored; **versions and TTLs** retire entries; **scopes** keep languages and audiences apart.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.cache.semantic",
+     "symbol": "SemanticCache",
+     "why": "The cache.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.cache.semantic",
+     "symbol": "entities",
+     "why": "The entity guard.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.cache-threshold",
+   "icon": "🎚️",
+   "covers": [
+    "new.l01.5"
+   ],
+   "explain": "Ten paraphrase pairs and eight near-miss pairs at seven **thresholds**, without and with the **entity guard**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.cache.semantic",
+     "symbol": "tune_threshold",
+     "why": "From labelled pairs.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.cache-backends",
+   "icon": "🗄️",
+   "covers": [
+    "new.l01.7",
+    "new.l01.8"
+   ],
+   "explain": "500 cached questions in **memory, SQLite, Redis Vector Sets and pgvector**: add and lookup time, persistence and expiry; and when to pick the other stores. pgvector needs `docker compose up -d`.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.cache.stores",
+     "symbol": "RedisVectorStore",
+     "why": "Redis Vector Sets.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.cache.stores",
+     "symbol": "PgVectorStore",
+     "why": "pgvector.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.cache-production",
+   "icon": "🏭",
+   "covers": [
+    "new.l01.1",
+    "new.l01.9",
+    "new.l01.13",
+    "new.l01.14"
+   ],
+   "explain": "What to measure, an **embedding cache** (CacheBackedEmbeddings), **provider prompt caching** against a response cache, **ten identical requests at once** with and without coalescing, and a warm-up.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.cache.semantic",
+     "symbol": "SemanticCache",
+     "why": "get_or_compute: coalescing.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: a guarded semantic cache in Redis",
+  "summary": "Questions that are personal or time-sensitive never touch the cache. Everything else is looked up by meaning in Redis Vector Sets, within its scope, and an answer is reused only above the measured threshold, with the same entities and versions, before its TTL. Identical questions in flight share one model call.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "rules",
+    "title": "Rules",
+    "icon": "🚫",
+    "tagline": "What never to cache",
+    "explain": "cacheable() refuses personal questions (order ids, \"my order\"), time-sensitive ones and refusals or errors; lookup() skips the same questions.",
+    "code": [
+     {
+      "module": "nimbus.cache.semantic",
+      "symbol": "cacheable",
+      "why": "The rules.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Every new kind of personal question is a rule here before it's a bug report."
+    ]
+   },
+   {
+    "id": "guard",
+    "title": "Guard",
+    "icon": "🛡️",
+    "tagline": "Same entities, same versions",
+    "explain": "entities() extracts ids, numbers, dates, places, menu items and cafés; a cached answer is reused only when they match. Entries carry model, prompt and index versions and a TTL.",
+    "code": [
+     {
+      "module": "nimbus.cache.semantic",
+      "symbol": "entities",
+      "why": "The entity guard.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Bump the index version on re-ingestion: every answer built on the old documents retires."
+    ]
+   },
+   {
+    "id": "store",
+    "title": "Store",
+    "icon": "🗄️",
+    "tagline": "Redis Vector Sets",
+    "explain": "RedisVectorStore keeps vectors in a Vector Set (VADD/VSIM with a scope FILTER) and payloads in hashes with their own TTL: shared by every process.",
+    "code": [
+     {
+      "module": "nimbus.cache.stores",
+      "symbol": "RedisVectorStore",
+      "why": "The store.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Watch hit rate and false-hit rate on a dashboard; sample hits for review."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "28 requests of support traffic",
+    "lab": "prod.cache-eval",
+    "explain": "Paraphrases, repeats and near-misses (another drink, city, number or order id) through five caches.\n\n| | hit rate | false hits | model calls | tokens | latency p50 |\n|---|---|---|---|---|---|\n| no cache | 0% | 0 | 28 | 3,985 | 2.0 s |\n| exact | 14% | 0 | 24 | 3,416 | 2.2 s |\n| exact, normalized | 21% | 0 | 22 | 3,119 | 2.4 s |\n| semantic, unguarded | 61% | 4 | 11 | 1,570 | 0.007 s |\n| **semantic, guarded (production)** | **43%** | **0** | **16** | **2,304** | **0.9 s** |\n\nThe unguarded semantic cache looked best on every cost number and gave four customers someone else's answer: Pune got Mumbai's delivery time (similarity 0.84), a refund after 20 days got the answer for 10 days (0.90), ₹1,300 got the points for ₹500 (0.89), and NC-1003 got NC-1002's cancellation answer (0.97). The guards (never caching order questions, and requiring the same numbers, places and products) removed all four for 18 fewer points of hit rate, and still saved 12 of 28 model calls. Normalizing exact keys added hits with no risk. The threshold (0.75) came from labelled pairs: on its own no threshold separated paraphrases from near-misses, and with the entity guard none of the near-misses hit.",
+    "code": [
+     {
+      "module": "academy.labs.production.m02_caching",
+      "symbol": "replay",
+      "why": "The replay.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Re-run with real traffic samples before changing the threshold or the embedding model."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/cache/exact.py",
+   "role": "The exact cache"
+  },
+  {
+   "path": "src/nimbus/cache/semantic.py",
+   "role": "The semantic cache, guards, threshold tuning"
+  },
+  {
+   "path": "src/nimbus/cache/stores.py",
+   "role": "Memory, SQLite, Redis Vector Sets, pgvector"
+  },
+  {
+   "path": "data/eval/cache_pairs.json",
+   "role": "Paraphrase and near-miss pairs"
+  },
+  {
+   "path": "data/eval/cache_traffic.json",
+   "role": "Replayed support traffic"
+  },
+  {
+   "path": "src/academy/labs/production/m02_caching.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Start Redis and Postgres",
+   "cmd": "docker compose up -d"
+  }
+ ]
+}

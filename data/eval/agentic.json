@@ -1,0 +1,17 @@
+[
+  {"kind": "documents", "question": "How many days of paid annual leave does an employee get?", "expect": ["24"]},
+  {"kind": "documents", "question": "Who approves remote work outside India?", "expect": ["Meera Iyer"]},
+  {"kind": "documents", "question": "What share of the price is paid on delivery under the supplier contract?", "expect": ["60"]},
+  {"kind": "documents", "question": "Could the Dubai opening be delayed?", "expect": ["August"]},
+  {"kind": "documents", "question": "How long does delivery take to a metro city?", "expect": ["2"]},
+  {"kind": "documents", "question": "By how much will green bean prices rise?", "expect": ["410", "447"]},
+  {"kind": "aggregate", "question": "How many vegan items are on the café menu?", "expect": ["3"]},
+  {"kind": "aggregate", "question": "What is the average price of a hot drink on the menu?", "expect": ["155"]},
+  {"kind": "aggregate", "question": "What is the total value of all orders that haven't been cancelled?", "expect": ["3860"]},
+  {"kind": "aggregate", "question": "Which is the cheapest vegan item on the menu?", "expect": ["Vegan Brownie"]},
+  {"kind": "multi_hop", "question": "Is the cheapest vegan menu item cheaper than a 250 g bag of Chikmagalur Classic beans, and by how much?", "expect": ["390"]},
+  {"kind": "small_talk", "question": "Hi there!", "expect": []},
+  {"kind": "small_talk", "question": "Thanks, that's all I needed.", "expect": []},
+  {"kind": "unanswerable", "question": "What is the CEO's annual salary?", "expect": []},
+  {"kind": "unanswerable", "question": "Which courier delivers orders to Chennai?", "expect": []}
+]

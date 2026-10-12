@@ -1,0 +1,290 @@
+{
+ "track": "agents",
+ "id": "09",
+ "title": "Deep agents: planning, files & subagents",
+ "summary": "A deep agent is create_agent with a harness for long, multi-step work: a filesystem for documents and notes, a todo list it plans with, backends from graph state to real folders to a shared store, a shell (and why it belongs in a sandbox), permissions on paths, subagents with clean contexts (sync, parallel, structured, or running on a server in the background), and streaming across all of them. The product gets a weekly ops review written from the warehouse's numbers, by a plain agent and by a deep agent. The evaluation checks every fact and counts what the harness costs.",
+ "learn": [
+  "**What a deep agent is**: the built-in tools, `files` in state, an ordinary LangGraph graph",
+  "**The virtual filesystem**: seeding files, the agent's file tools, persistence per thread",
+  "**Planning** with TodoListMiddleware, and watching the plan change",
+  "**Backends**: real files (FilesystemBackend), long-term files per user (Composite + Store), running code (LocalShellBackend)",
+  "**Permissions** on paths: deny, or interrupt for a person",
+  "**Subagents**: delegation, isolation, existing agents with structured results, parallel calls, cheaper models",
+  "**Streaming** a deep agent and its subagents; **async subagents** on a server"
+ ],
+ "flow": "weekly ops review ─┬─ create_agent: cafe_names, weekly_numbers ×6, low_ratings ×6 (parallel calls) → review\n                   └─ deep agent: write_todos → cafe_names → task(sales-analyst) ×6, task(voice-of-customer) ×6\n                                  → write_file(/review.md)            every number from nimbus/ops/data.py",
+ "labs": [
+  {
+   "lab": "agents.deep-basics",
+   "icon": "🧠",
+   "covers": [
+    "deep.l01"
+   ],
+   "explain": "The same two-café comparison by **create_deep_agent** and **create_agent**: the built-in tools, `files` in state, and a comparison left in **/comparison.md**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m09_deep",
+     "symbol": "deep_vs_plain",
+     "why": "Both agents.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.deep-files",
+   "icon": "🗂️",
+   "covers": [
+    "deep.l02"
+   ],
+   "explain": "This week's low reviews and supplier notes **seeded as files**; the agent explores with ls and read_file, writes **/notes/issues.md**, edits it next turn; a **new thread** starts empty.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m09_deep",
+     "symbol": "seeded_run",
+     "why": "Seed, work, read back.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.deep-planning",
+   "icon": "📝",
+   "covers": [
+    "deep.l03"
+   ],
+   "explain": "**TodoListMiddleware** on a six-café question: the plan as it changes. Before the tools rejected impossible dates, the agent invented 2023 dates and looped 138 tool calls; and the plan ended with its last todo still in progress.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m09_deep",
+     "symbol": "planned_run",
+     "why": "The plan, streamed.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.ops.agents",
+     "symbol": "check_dates",
+     "why": "Dates the data covers.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.deep-backends",
+   "icon": "💽",
+   "covers": [
+    "deep.l04",
+    "deep.l05"
+   ],
+   "explain": "A **FilesystemBackend** workspace (`../` refused, real files edited) and a **CompositeBackend** that keeps **/memories/** in a store per manager: Priya's preferences recalled on Friday, Arjun's memory empty.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m09_deep",
+     "symbol": "real_files",
+     "why": "Real files.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m09_deep",
+     "symbol": "long_term_files",
+     "why": "Long-term files per user.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.deep-execute",
+   "icon": "💻",
+   "covers": [
+    "deep.l06"
+   ],
+   "explain": "The week's sales exported to CSV; the agent writes and **runs a script** with execute, checked against plain Python. It still tried absolute paths several times before using relative ones.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m09_deep",
+     "symbol": "shell_agent",
+     "why": "LocalShellBackend.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.deep-permissions",
+   "icon": "🔐",
+   "covers": [
+    "deep.l07"
+   ],
+   "explain": "Three rules: **/secrets/** unreadable, **/data/** read-only, **/reports/** written only after **approval**. Three requests hit them.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m09_deep",
+     "symbol": "permissions_run",
+     "why": "Permissions.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.deep-subagents",
+   "icon": "🧑‍🤝‍🧑",
+   "covers": [
+    "deep.l08",
+    "deep.l09"
+   ],
+   "explain": "A chief of staff delegating to the ops **analysts** (isolation measured), an existing **create_agent with structured output** as a subagent called **in parallel**, and a **smaller model** for a newsletter line.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m09_deep",
+     "symbol": "subagent_run",
+     "why": "Delegation.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m09_deep",
+     "symbol": "structured_subagent",
+     "why": "Structured, parallel, smaller.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.deep-streaming",
+   "icon": "📡",
+   "covers": [
+    "deep.l10"
+   ],
+   "explain": "Two cafés checked by subagents in parallel, streamed with **namespaces** and **custom progress**, the **main agent's tokens only**, and **stream_events v3** subagent handles.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m09_deep",
+     "symbol": "streamed",
+     "why": "The streamed agent.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.deep-async",
+   "icon": "⏳",
+   "covers": [
+    "deep.l11"
+   ],
+   "explain": "A quarter's research **on a LangGraph server**, started in the background while the agent answers a menu question, then **checked** until done.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m09_deep",
+     "symbol": "async_subagent_run",
+     "why": "Start, talk, check.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the weekly ops review",
+  "summary": "Nimbus ops gets a weekly review of every café: revenue and its change, best seller, rating, and the low reviews with their ids. Every number comes from tools that compute it in code from the warehouse. Two agents write it from the same tools, and the evaluation decides which one runs the job.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "tools",
+    "title": "Tools",
+    "icon": "🧮",
+    "tagline": "Numbers in code",
+    "explain": "`cafe_week` computes revenue, change, orders, refunds, rating and best and weakest sellers in SQL. The tools quote them; the model never computes. Dates outside the warehouse are refused with what 'this week' means.",
+    "code": [
+     {
+      "module": "nimbus.ops.data",
+      "symbol": "cafe_week",
+      "why": "One café's week.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.ops.agents",
+      "symbol": "check_dates",
+      "why": "Dates the data covers.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Keep every derived number in a tool: small models miscount, misread and round."
+    ]
+   },
+   {
+    "id": "agents",
+    "title": "Agents",
+    "icon": "🤖",
+    "tagline": "Plain and deep, same tools",
+    "explain": "The plain agent calls the tools itself, in parallel. The deep agent plans, delegates one café at a time to two analysts with clean contexts, and writes /review.md.",
+    "code": [
+     {
+      "module": "nimbus.ops.agents",
+      "symbol": "plain_agent",
+      "why": "create_agent.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.ops.agents",
+      "symbol": "deep_agent",
+      "why": "create_deep_agent.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Start with the plain agent; add the harness when a job needs what it gives."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "Every fact, checked",
+    "lab": "agents.ops-review-eval",
+    "explain": "Each review is checked café by café against the warehouse: revenue, change, best seller, rating and every low review's id.\n\n| two reviews each | facts right | model calls | tokens per review | largest prompt | seconds |\n|---|---|---|---|---|---|\n| **create_agent** | **58/58** | **4.0** | **4,943** | **1,680** | **17.7** |\n| deep agent | 58/58 | 36.5 | 152,764 | 10,019 | 100.1 |\n\nBoth were right on every fact. The deep agent cost 31× the tokens and 5.7× the time, and even its largest prompt was six times bigger: the harness's own instructions (filesystem, todos, subagents) outweigh the isolation it buys on a job this small. The weekly numbers ship on create_agent. Module 10 tests what the harness is for: house rules kept in memory, a procedure loaded as a skill, approvals before emails, and a review a manager can open.",
+    "code": [
+     {
+      "module": "academy.labs.agents.m09_deep",
+      "symbol": "evaluate_review",
+      "why": "The evaluation.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.ops.evaluation",
+      "symbol": "score",
+      "why": "Scoring against the warehouse.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Measure the harness's cost before you pay it."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/ops/data.py",
+   "role": "The ops numbers, computed in code"
+  },
+  {
+   "path": "src/nimbus/ops/agents.py",
+   "role": "Tools, the plain agent, the deep agent and its analysts"
+  },
+  {
+   "path": "src/nimbus/ops/evaluation.py",
+   "role": "Scoring a review against the warehouse"
+  },
+  {
+   "path": "server/ops_research.py",
+   "role": "The researcher served for async subagents"
+  },
+  {
+   "path": "src/academy/labs/agents/m09_deep.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Serve the researcher (and the desk)",
+   "cmd": "cd server && uv run langgraph dev"
+  }
+ ]
+}

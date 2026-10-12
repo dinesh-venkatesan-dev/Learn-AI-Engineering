@@ -1,0 +1,311 @@
+{
+ "track": "agents",
+ "id": "02",
+ "title": "Control flow",
+ "summary": "Module 1's graphs always took the same path. Real flows branch (a safety ticket goes somewhere else), loop (a draft that fails a check goes back), fan out over data whose size isn't known in advance (one lookup per order mentioned), and must stop before they run away. This module covers every way LangGraph decides what runs next (conditional edges, loops and the recursion limit, supersteps, Command, Send), what callers see (input, output and private state), what LangGraph tells a node about the run, and the Pregel engine underneath. The support graph gets routing, parallel order lookups and a checked redraft loop.",
+ "learn": [
+  "**Conditional edges**: routing functions, path maps, several branches at once, END early, a model choosing the branch",
+  "**Loops and the recursion limit**: exits in the state, the real default (10,007), handling GraphRecursionError",
+  "**Parallel branches and supersteps**: fan-out/fan-in, uneven branches, defer=True",
+  "**Command and Send**: update and route from one node; a dynamic number of parallel tasks",
+  "**Input, output and private state**: a public contract for a graph",
+  "**Managed values, runtime info, Pregel and channels**: what the engine does and tells you"
+ ],
+ "flow": "START ─┬─ triage ─(route)─┬─ safety_reply ──────────────────────────→ END  (flagged for a person)\n       │                  └─ draft_reply → check_reply ─(ok)────────→ END\n       │                                       └─(problems, budget left)─┘ redraft with feedback\n       └─(Send per order id)→ look_up_order ×N   (merged by operator.add)",
+ "labs": [
+  {
+   "lab": "agents.conditional-edges",
+   "icon": "🔀",
+   "covers": [
+    "lc.l49",
+    "lg.l07"
+   ],
+   "explain": "Four customer messages through rule-based routing (with END for anything else), a **path map**, a router that returns **several branches**, and a **model** choosing the branch.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m02_control",
+     "symbol": "routing_function",
+     "why": "A routing function.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m02_control",
+     "symbol": "llm_driven_branch",
+     "why": "The model decides.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.loops",
+   "icon": "🔁",
+   "covers": [
+    "lg.l08"
+   ],
+   "explain": "A loop with an **exit** in the state, one without, and what the **recursion limit** does about it (its real default in LangGraph 1.x is 10,007, not the 25 many tutorials quote).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m02_control",
+     "symbol": "a_loop_with_an_exit",
+     "why": "An exit condition.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m02_control",
+     "symbol": "recursion_limit",
+     "why": "Per-run limit, error handled.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.parallel",
+   "icon": "⏸️",
+   "covers": [
+    "lg.l09"
+   ],
+   "explain": "Three slow tasks **fanned out** and joined (timed), the **supersteps** they ran in, branches of **different lengths**, and a **deferred** summary node.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m02_control",
+     "symbol": "fan_out_fan_in",
+     "why": "Fan-out / fan-in.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m02_control",
+     "symbol": "deferred_node",
+     "why": "defer=True.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.command",
+   "icon": "🎯",
+   "covers": [
+    "lg.l10"
+   ],
+   "explain": "A node that returns **Command(update, goto)**, its **destinations**, and when to prefer it over a conditional edge.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m02_control",
+     "symbol": "command_from_a_node",
+     "why": "Command from a node.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.send",
+   "icon": "📨",
+   "covers": [
+    "lg.l11"
+   ],
+   "explain": "A basket of any size priced line by line in **parallel tasks made at run time** (Send), each with its own input, collected by a reducer; and Send to different nodes.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m02_control",
+     "symbol": "map_reduce",
+     "why": "Map-reduce with Send.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.io-schemas",
+   "icon": "🔐",
+   "covers": [
+    "lg.l12"
+   ],
+   "explain": "Callers send an order and get only the price: the unit cost and margin live only inside the run (**input, output and private** schemas).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m02_control",
+     "symbol": "three_views_of_one_graph",
+     "why": "Three views of one graph.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.runtime-info",
+   "icon": "🛰️",
+   "covers": [
+    "lg.l13"
+   ],
+   "explain": "**RemainingSteps** for a graceful stop before the limit, **execution_info** with retries, **get_config / get_runtime** in helpers, and **UntrackedValue** that's never checkpointed.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m02_control",
+     "symbol": "remaining_steps_graph",
+     "why": "RemainingSteps.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m02_control",
+     "symbol": "execution_info_and_helpers",
+     "why": "Execution info and helpers.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.pregel",
+   "icon": "⚙️",
+   "covers": [
+    "lg.l14"
+   ],
+   "explain": "What compile() builds (**Pregel**: channels and actors), **writes visible only in the next superstep**, a Pregel app **by hand**, the channel type behind each kind of field, and **DeltaChannel**'s smaller checkpoints.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m02_control",
+     "symbol": "pregel_by_hand",
+     "why": "NodeBuilder.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m02_control",
+     "symbol": "delta_channel_sizes",
+     "why": "DeltaChannel vs operator.add.",
+     "notes": [
+      {
+       "match": "durability=\"sync\"",
+       "text": "Sync durability: in async mode, long DeltaChannel loops deadlocked on SQLite."
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus support graph v2",
+  "summary": "The support graph routes safety tickets to the approved message (flagged for a person), looks up every order a ticket mentions in parallel (Send), and checks each draft in code: the real order status stated, no claims of cancellations or refunds the assistant can't make, a sane length. A failing draft goes back with the problems as feedback, at most twice, guarded by RemainingSteps; one that still fails is flagged for review. Input and output schemas keep internal fields out of the result.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "route",
+    "title": "Route",
+    "icon": "🔀",
+    "tagline": "Safety first",
+    "explain": "After triage, a conditional edge sends safety tickets to `safety_reply` (the approved fixed message, `needs_review=True`) and everything else to `draft_reply`.",
+    "code": [
+     {
+      "module": "nimbus.support.graph",
+      "symbol": "build_support_graph_v2",
+      "why": "The graph.",
+      "notes": [
+       {
+        "match": "graph.add_conditional_edges(\"triage\", route, [\"safety_reply\", \"draft_reply\"])",
+        "text": "The routing edge, with its possible targets declared."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Routes that send customers somewhere irreversible (a refund, an escalation) deserve their own evaluation set."
+    ]
+   },
+   {
+    "id": "send",
+    "title": "Send",
+    "icon": "📨",
+    "tagline": "One lookup per order",
+    "explain": "`find_orders` turns every order id in the ticket into a Send to `look_up_order`; the lookups run in parallel with triage, each with only its order id, and their results merge into `orders` (operator.add).",
+    "code": [
+     {
+      "module": "nimbus.support.graph",
+      "symbol": "build_support_graph_v2",
+      "why": "Send.",
+      "notes": [
+       {
+        "match": "return [Send(\"look_up_order\", {\"order_id\": order_id}) for order_id in ids]",
+        "text": "As many tasks as order ids, decided at run time."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Cap the number of Sends from user input (a ticket pasting 500 order ids shouldn't start 500 lookups)."
+    ]
+   },
+   {
+    "id": "check",
+    "title": "Check",
+    "icon": "✅",
+    "tagline": "A redraft loop, capped",
+    "explain": "`check_reply` runs `reply_problems` (code, no model) and returns a Command: back to `draft_reply` with feedback while problems remain and the budget allows (2 drafts, RemainingSteps), otherwise END with `needs_review` set if it still fails.",
+    "code": [
+     {
+      "module": "nimbus.support.graph",
+      "symbol": "reply_problems",
+      "why": "The checks.",
+      "notes": [
+       {
+        "match": "if CLAIMED_ACTION.search(reply.replace(\"\\u2019\", \"'\")):",
+        "text": "Claims of actions the assistant can't take (seen in this module's first run: 'I've gone ahead and cancelled both')."
+       },
+       {
+        "match": "words = STATUS_WORDS.get(record[\"status\"], [record[\"status\"]])",
+        "text": "The real status, in words a reply would use."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.graph",
+      "symbol": "SupportStateV2",
+      "why": "State with RemainingSteps.",
+      "notes": [
+       {
+        "match": "remaining_steps: RemainingSteps",
+        "text": "Filled in by LangGraph: the loop stops before the recursion limit."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Checks in code are cheap and exact; add an LLM grader only for what code can't measure (Module 3's evaluator-optimizer)."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "v2 vs v1, 20 tickets",
+    "lab": "agents.support-v2-eval",
+    "explain": "| | category | states the real order status | final replies failing the checks | redrafts | flagged | calls / ticket | p50 |\n|---|---|---|---|---|---|---|---|\n| v1 | 0.90 | 3/6 | 3 | 0 | 0 | 1.85 | 5.2 s |\n| **v2** | 0.95 | **6/6** | **0** | 3 | 3 | 2.00 | 5.0 s |\n\nThe redraft loop fixed every failing reply for 0.15 extra calls per ticket on average; the 3 flagged tickets are the safety ones, sent the approved message and routed to a person.",
+    "code": [
+     {
+      "module": "academy.labs.agents.m02_control",
+      "symbol": "evaluate_v1_vs_v2",
+      "why": "The evaluation.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Count redrafts in production: a rising rate means the drafting prompt or the model drifted."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/support/graph.py",
+   "role": "Support graph v1 and v2: routing, Send, checked loop, schemas"
+  },
+  {
+   "path": "src/academy/labs/agents/m02_control.py",
+   "role": "The labs"
+  },
+  {
+   "path": "tests/test_support_graph.py",
+   "role": "Reply checks and order notes"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Support graph tests",
+   "cmd": "uv run pytest tests/test_support_graph.py"
+  }
+ ]
+}

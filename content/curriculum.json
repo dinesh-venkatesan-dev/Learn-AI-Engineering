@@ -1,0 +1,549 @@
+{
+ "tracks": [
+  {
+   "id": "langchain",
+   "title": "LangChain",
+   "icon": "🦜",
+   "summary": "Models, messages, prompts, structured output, LCEL chains, tools, create_agent and middleware: the LangChain base every other track builds on. Its RAG, LangGraph, MCP and production lessons live in those tracks.",
+   "modules": [
+    {
+     "id": "01",
+     "title": "Models, messages & prompts",
+     "from": [
+      "lc.p1"
+     ],
+     "status": "built",
+     "summary": "Chat models, messages, multimodal input, prompt templates, structured output, invocation, errors, reasoning and local models; Nimbus support triage v1 with its scorecard."
+    },
+    {
+     "id": "02",
+     "title": "Chains with LCEL",
+     "from": [
+      "lc.p2"
+     ],
+     "status": "built",
+     "summary": "Runnables and |, parallel steps, functions as steps, routing, retries/fallbacks/config, callbacks and events; Nimbus support pipeline v2 with an outage drill."
+    },
+    {
+     "id": "03",
+     "title": "Tools",
+     "from": [
+      "lc.l17",
+      "lc.l18",
+      "lc.l19",
+      "lc.l20"
+     ],
+     "status": "built",
+     "summary": "Defining tools, what they return, prebuilt toolkits and the tool loop by hand; Nimbus support tools scored on 12 labelled requests."
+    },
+    {
+     "id": "04",
+     "title": "Agents with create_agent",
+     "from": [
+      "lc.l21",
+      "lc.l24",
+      "lc.l26",
+      "lc.l29"
+     ],
+     "status": "built",
+     "summary": "create_agent, structured responses, long conversations, runtime context and state; Nimbus support agent v1 scored on 10 scenarios.",
+     "notes": "Streaming (lc.l22–23) moved to Agents 04 and memory (lc.l25, lc.l30) to Agents 05: the same APIs, taught once in depth."
+    },
+    {
+     "id": "05",
+     "title": "Middleware, guardrails & context engineering",
+     "from": [
+      "lc.l27",
+      "lc.l28",
+      "lc.l31",
+      "lc.l32",
+      "lc.l33",
+      "lc.l34",
+      "lc.l35"
+     ],
+     "status": "built",
+     "summary": "Middleware, human approval, custom/reliability/context middleware, guardrails and context engineering; Nimbus support agent v2, guarded, scored against attacks."
+    }
+   ]
+  },
+  {
+   "id": "rag",
+   "title": "RAG",
+   "icon": "📚",
+   "summary": "Retrieval-augmented generation in depth: every loader, splitter, embedding model, retriever and evaluation method, measured.",
+   "modules": [
+    {
+     "id": "01",
+     "title": "Foundations: RAG end to end",
+     "from": [
+      "rag.p1",
+      "new.p2"
+     ],
+     "status": "built",
+     "summary": "Why RAG, keyword vs semantic search, the retrieval metrics every later decision uses, and v1 of the ingestion pipeline with its first scorecard."
+    },
+    {
+     "id": "02",
+     "title": "Loading every format",
+     "from": [
+      "rag.p2",
+      "lc.l40"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "03",
+     "title": "OCR & document understanding",
+     "from": [
+      "rag.p3"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "04",
+     "title": "Chunking",
+     "from": [
+      "rag.p4",
+      "lc.l41"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "05",
+     "title": "Embeddings & vector stores",
+     "from": [
+      "rag.p5",
+      "lc.l42",
+      "lc.l43"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "06",
+     "title": "Retrieval: filters, hybrid search & reranking",
+     "from": [
+      "rag.p6",
+      "lc.l44",
+      "lc.l47"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "07",
+     "title": "Generation: grounded answers with citations",
+     "from": [
+      "rag.p7",
+      "lc.l45"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "08",
+     "title": "Advanced RAG architectures",
+     "from": [
+      "rag.p8",
+      "lc.l46"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "09",
+     "title": "Evaluation & production RAG",
+     "from": [
+      "rag.p9",
+      "smith.l19"
+     ],
+     "status": "built",
+     "summary": "",
+     "except": [
+      "rag.l53.3"
+     ],
+     "notes": "Evaluating RAG with LangSmith (smith.l19) moved here, next to the Nimbus scorecard. Caching moved to Production 02.",
+     "capstones": [
+      "rag.l54"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "agents",
+   "title": "Agents with LangGraph",
+   "icon": "🕸️",
+   "summary": "Graphs, control flow, workflows, tool-calling agents, memory, human-in-the-loop, multi-agent systems and deep agents.",
+   "modules": [
+    {
+     "id": "01",
+     "title": "Graphs: state, nodes, edges & reducers",
+     "from": [
+      "lg.p1",
+      "lc.l48"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "02",
+     "title": "Control flow",
+     "from": [
+      "lg.p2",
+      "lc.l49"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "03",
+     "title": "Workflow patterns",
+     "from": [
+      "lg.p3"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "04",
+     "title": "Tool-calling agents",
+     "from": [
+      "lg.p4",
+      "lc.l50",
+      "lc.l22",
+      "lc.l23"
+     ],
+     "status": "built",
+     "summary": "",
+     "notes": "Includes create_agent streaming (from the LangChain track): one lab compares agent streams with graph streams."
+    },
+    {
+     "id": "05",
+     "title": "Persistence & memory",
+     "from": [
+      "lg.p5",
+      "lc.l51",
+      "lc.l25",
+      "lc.l30"
+     ],
+     "status": "built",
+     "summary": "",
+     "notes": "Includes create_agent short- and long-term memory (from the LangChain track): the same checkpointer and store."
+    },
+    {
+     "id": "06",
+     "title": "Human-in-the-loop",
+     "from": [
+      "lg.p6"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "07",
+     "title": "Multi-agent systems",
+     "from": [
+      "lg.p7",
+      "lc.l52",
+      "lc.l36",
+      "lc.l37",
+      "lc.l38",
+      "lc.l39"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "08",
+     "title": "Production LangGraph",
+     "from": [
+      "lg.p8"
+     ],
+     "status": "built",
+     "summary": "",
+     "capstones": [
+      "lg.l51"
+     ]
+    },
+    {
+     "id": "09",
+     "title": "Deep agents: planning, files & subagents",
+     "from": [
+      "deep.p1",
+      "deep.p2",
+      "deep.p3"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "10",
+     "title": "Deep agents: memory, skills & control",
+     "from": [
+      "deep.p4",
+      "deep.p5",
+      "deep.p6"
+     ],
+     "status": "built",
+     "summary": "",
+     "capstones": [
+      "deep.l19"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "mcp",
+   "title": "MCP",
+   "icon": "🔌",
+   "summary": "The Model Context Protocol: servers, clients, transports, tools, resources and prompts, and running them in production.",
+   "modules": [
+    {
+     "id": "01",
+     "title": "Protocol foundations",
+     "from": [
+      "mcp.p1"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "02",
+     "title": "Building servers",
+     "from": [
+      "mcp.p2"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "03",
+     "title": "MCP with LangChain & LangGraph",
+     "from": [
+      "mcp.p3",
+      "lc.l57"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "04",
+     "title": "Production MCP",
+     "from": [
+      "mcp.p4",
+      "mcp.p5"
+     ],
+     "status": "built",
+     "summary": "",
+     "capstones": [
+      "mcp.l27"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "data",
+   "title": "Data agents",
+   "icon": "🗄️",
+   "summary": "Text-to-SQL, SQL agents and analytics assistants that query real databases safely and check their numbers.",
+   "modules": [
+    {
+     "id": "01",
+     "title": "Text to SQL",
+     "from": [
+      "data.p1"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "02",
+     "title": "SQL agents & workflows",
+     "from": [
+      "data.p2"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "03",
+     "title": "Analytics assistants",
+     "from": [
+      "data.p3",
+      "data.p4"
+     ],
+     "status": "built",
+     "summary": "",
+     "capstones": [
+      "data.l15"
+     ]
+    }
+   ]
+  },
+  {
+   "id": "fastapi",
+   "title": "FastAPI",
+   "icon": "⚡",
+   "summary": "Building APIs with FastAPI: typed inputs and outputs, dependencies, databases, streaming, background work, security and testing, and finally serving an agent as a service.",
+   "modules": [
+    {
+     "id": "01",
+     "title": "APIs with FastAPI",
+     "from": [
+      "api.p1",
+      "api.p2"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "02",
+     "title": "Data, streaming & background work",
+     "from": [
+      "api.p3"
+     ],
+     "status": "built",
+     "summary": ""
+    },
+    {
+     "id": "03",
+     "title": "Security & testing",
+     "from": [
+      "api.p4",
+      "lc.l56",
+      "lc.l60"
+     ],
+     "status": "built",
+     "summary": "",
+     "capstones": [
+      "api.l17"
+     ]
+    },
+    {
+     "id": "04",
+     "title": "From agent to service",
+     "from": [
+      "prod.p1",
+      "lc.l61"
+     ],
+     "status": "built",
+     "summary": ""
+    }
+   ]
+  },
+  {
+   "id": "production",
+   "title": "Shipping to production",
+   "icon": "🚀",
+   "summary": "Running LLM apps for real users: reliability and cost, caching, tracing, evaluation, containers and CI, Kubernetes, traffic and the cloud.",
+   "modules": [
+    {
+     "id": "01",
+     "title": "Reliability, rate limits & cost",
+     "from": [
+      "prod.p2",
+      "lc.l58",
+      "lc.l59",
+      "smith.l07"
+     ],
+     "status": "built",
+     "summary": "",
+     "except": [
+      "lc.l58.1",
+      "lc.l58.2",
+      "prod.l07"
+     ],
+     "notes": "Token cost from LangSmith (smith.l07) moved here: one place for cost. Caching has its own module next."
+    },
+    {
+     "id": "02",
+     "title": "Caching: exact, semantic & embedding caches",
+     "from": [
+      "lc.l58.1",
+      "lc.l58.2",
+      "prod.l07",
+      "rag.l53.3",
+      "new.p1"
+     ],
+     "status": "built",
+     "summary": "How exact and semantic caches work, what an entry stores, choosing the threshold from data, which database to use, what to cache and never cache, invalidation and scoping, measured on the Nimbus questions.",
+     "notes": "Gathers the caching points from LangChain, RAG and Production, plus 14 new points on semantic caching."
+    },
+    {
+     "id": "03",
+     "title": "Tracing & feedback",
+     "from": [
+      "smith.p1",
+      "smith.p2",
+      "lc.l53"
+     ],
+     "status": "built",
+     "summary": "",
+     "except": [
+      "smith.l07"
+     ]
+    },
+    {
+     "id": "04",
+     "title": "Evaluation, datasets & prompts",
+     "from": [
+      "smith.p3",
+      "smith.p4",
+      "smith.p5",
+      "smith.p6",
+      "lc.l54",
+      "lc.l55"
+     ],
+     "status": "built",
+     "summary": "",
+     "except": [
+      "smith.l19"
+     ],
+     "capstones": [
+      "smith.l25"
+     ]
+    },
+    {
+     "id": "05",
+     "title": "Shipping: containers, CI & releases",
+     "from": [
+      "prod.p3",
+      "prod.p4"
+     ],
+     "status": "built",
+     "summary": "",
+     "capstones": [
+      "prod.l17"
+     ]
+    },
+    {
+     "id": "06",
+     "title": "Kubernetes",
+     "from": [
+      "deploy.p1",
+      "deploy.p2"
+     ],
+     "status": "planned",
+     "summary": ""
+    },
+    {
+     "id": "07",
+     "title": "Traffic, releases & the cloud",
+     "from": [
+      "deploy.p3",
+      "deploy.p4",
+      "deploy.p5"
+     ],
+     "status": "planned",
+     "summary": "",
+     "capstones": [
+      "deploy.l21"
+     ]
+    }
+   ]
+  }
+ ]
+}

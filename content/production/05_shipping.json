@@ -1,0 +1,272 @@
+{
+ "track": "production",
+ "id": "05",
+ "title": "Shipping: containers, CI & releases",
+ "summary": "Take the Nimbus API from a laptop to a service a team can run. Settings come from the environment and are validated at start-up; the service is packaged as an image and the whole stack is described in one compose file; every request carries an id through JSON logs and Prometheus metrics; CI runs the fast tests on every change and the quality gate on pull requests; a load test finds the ceiling; and new prompts reach users through shadow answers, a canary share and a rollback that's one variable. The capstone deploys the stack and runs the release checklist.",
+ "learn": [
+  "**Configuration and secrets**: typed settings from the environment, precedence, validation at start-up, SecretStr",
+  "**Docker and compose**: a two-stage image, layer caching, HEALTHCHECK, one stack, one image in two roles, scaling workers",
+  "**Observability**: request ids, JSON logs with structlog, Prometheus metrics, alert rules",
+  "**Testing and CI**: fast tests with injected settings and fake models, GitHub Actions, the same steps locally",
+  "**Load and releases**: Little's law and the ceiling, shadow testing, canaries by hash, rollback as configuration"
+ ],
+ "flow": "push ─→ CI (lint, fast tests, image) ─→ PR: eval gate ─→ deploy (API ×N, worker, Postgres, Redis)\n   shadow ─→ canary 5% ─→ watch errors · latency · feedback ─→ 25% ─→ 100%   (rollback: canary_percent=0)",
+ "labs": [
+  {
+   "lab": "prod.config",
+   "icon": "⚙️",
+   "covers": [
+    "prod.l10"
+   ],
+   "explain": "One setting from **every source** in order, a wrong value that **stops the real service** at start-up, a **SecretStr**, .env kept out of git and the image, a dict as **JSON** in a variable.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.config",
+     "symbol": "Settings",
+     "why": "Every setting.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.docker",
+   "icon": "🐳",
+   "covers": [
+    "prod.l11"
+   ],
+   "explain": "The **two-stage Dockerfile**, which steps a code change **re-runs**, configuration at run time, the **HEALTHCHECK** run against a live server, and the built image checked when Docker is running.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m05_shipping",
+     "symbol": "rebuilt_on_code_change",
+     "why": "Layer caching.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.compose",
+   "icon": "🧩",
+   "covers": [
+    "prod.l12"
+   ],
+   "explain": "The stack as compose resolves it: services, **names on a private network**, **one image in two roles**; then a **restart that keeps conversations** (Postgres vs memory) and **more workers** on one queue.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.stack",
+     "symbol": "Stack",
+     "why": "The stack as processes.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.observability",
+   "icon": "🔭",
+   "covers": [
+    "prod.l13"
+   ],
+   "explain": "**Request ids** from the caller or new, **JSON log lines** with structlog, **Prometheus metrics** by path template and status, and the **alert rules** evaluated during a provider outage.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.observability.metrics",
+     "symbol": "setup_json_logs",
+     "why": "JSON logs.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.ci",
+   "icon": "🧪",
+   "covers": [
+    "prod.l14"
+   ],
+   "explain": "The **fast tests** and the real-model ones, a test that **injects** its own settings and model, the **GitHub Actions** workflow, and **scripts/ci.sh** running the same steps here.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m05_shipping",
+     "symbol": "injected",
+     "why": "Dependency injection.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.load",
+   "icon": "📈",
+   "covers": [
+    "prod.l15"
+   ],
+   "explain": "A **load generator** against the agent endpoint with a fake 1-second model: throughput, p50, p95 and errors as users grow, **Little's law**, and **two processes**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.loadtest",
+     "symbol": "load",
+     "why": "The load generator.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.releases",
+   "icon": "🚦",
+   "covers": [
+    "prod.l16"
+   ],
+   "explain": "**Shadow** answers from the v3 prompt on three questions, **canary assignment by hash**, a rollout **5% → 25% → 100%** watched per variant, and a **rollback** that's one variable.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.release",
+     "symbol": "variant",
+     "why": "Canary by hash.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: deploy, then the release checklist",
+  "summary": "The service runs from one image in two roles, configured only by environment variables. A release is a checklist: CI green, the image linted and built, the candidate through the eval gate, the deployment healthy, the contract held, conversations surviving restarts, the canary on the right users with the right answers, no 5xx, and a rollback drill.",
+  "covers": [
+   "prod.l17"
+  ],
+  "steps": [
+   {
+    "id": "config",
+    "title": "Configure",
+    "icon": "⚙️",
+    "tagline": "Everything from the environment",
+    "explain": "One Settings class; compose and the stack pass the same NIMBUS_* variables; secrets are SecretStr and never in the image.",
+    "code": [
+     {
+      "module": "nimbus.config",
+      "symbol": "Settings",
+      "why": "Settings.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Validate at start-up: a wrong value should stop the deploy, not the 3 a.m. request."
+    ]
+   },
+   {
+    "id": "package",
+    "title": "Package",
+    "icon": "🐳",
+    "tagline": "One image, two roles",
+    "explain": "The Dockerfile installs exact versions from uv.lock before copying code; compose runs it as the API and as the RQ worker.",
+    "code": [
+     {
+      "module": "academy.labs.production.m05_shipping",
+      "symbol": "compose_config",
+      "why": "The stack.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.api.stack",
+      "symbol": "Stack",
+      "why": "The same, as processes.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Pin base images and tools by version; scan the image in CI."
+    ]
+   },
+   {
+    "id": "ci",
+    "title": "CI",
+    "icon": "🧪",
+    "tagline": "Tested on every change",
+    "explain": ".github/workflows/ci.yml: lint, fast tests and the image on every push; the real-model quality gate on pull requests (scripts/eval_gate.py).",
+    "code": [
+     {
+      "module": "academy.labs.production.m05_shipping",
+      "symbol": "ci_jobs",
+      "why": "The workflow.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Keep the fast suite fast: fake models, injected settings, no network."
+    ]
+   },
+   {
+    "id": "release",
+    "title": "Release",
+    "icon": "🚦",
+    "tagline": "The checklist",
+    "lab": "prod.release-checklist",
+    "explain": "The capstone deploys the stack (API ×2, worker, Postgres, Redis) and releases the v3 prompt to a 10% canary through every check.\n\n| Check | Measured on the deployed stack (API ×2, RQ worker, Postgres, Redis) |\n|---|---|\n| CI | ruff clean, 16 API tests passed in 2.3 s |\n| Image | hadolint: no findings; the build is skipped when Docker's daemon isn't running |\n| Eval gate (v3 prompt) | facts 1.0, no promises 1.0 against floors 0.8 / 1.0: passed |\n| Health and contract | /health 200; no API key → 401 |\n| Restart | the thread kept 2 of 2 messages (Postgres checkpointer) |\n| Canary 10% | X-Variant right for a canary and a stable user; the canary answer had the price, the stable (v1) one didn't |\n| Watch | 0 5xx in the canary's responses |\n| Rollback | NIMBUS_CANARY_PERCENT=0 → the canary user is back on stable |\n\nBefore that, the labs measured the pieces: a wrong setting stops the service in 0.9 s; 3 workers drain 6 jobs in 2.3 s vs 6.4 s; one process caps at 3.9 requests/s (Little's law: 4); two reached 6.9, not 8, because connections split unevenly (11 vs 5).",
+    "code": [
+     {
+      "module": "academy.labs.production.m05_shipping",
+      "symbol": "release_checklist",
+      "why": "The checklist.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Every step has evidence; a failed check stops the release."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "Dockerfile",
+   "role": "The image"
+  },
+  {
+   "path": "docker-compose.yml",
+   "role": "The stack: Postgres, Redis, API, worker"
+  },
+  {
+   "path": ".github/workflows/ci.yml",
+   "role": "CI"
+  },
+  {
+   "path": "scripts/ci.sh",
+   "role": "CI's steps, locally"
+  },
+  {
+   "path": "scripts/eval_gate.py",
+   "role": "The quality gate"
+  },
+  {
+   "path": "src/nimbus/api/stack.py",
+   "role": "The stack as processes"
+  },
+  {
+   "path": "src/nimbus/api/loadtest.py",
+   "role": "The load generator"
+  },
+  {
+   "path": "src/nimbus/api/release.py",
+   "role": "Canary and shadow"
+  },
+  {
+   "path": "src/nimbus/observability/metrics.py",
+   "role": "Metrics, JSON logs, alert rules"
+  },
+  {
+   "path": "src/academy/labs/production/m05_shipping.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "CI's steps locally",
+   "cmd": "./scripts/ci.sh"
+  },
+  {
+   "label": "The whole stack",
+   "cmd": "docker compose --profile app up -d --build"
+  },
+  {
+   "label": "A load test",
+   "cmd": "uv run python -m nimbus.api.loadtest http://127.0.0.1:8000 --users 8"
+  }
+ ]
+}

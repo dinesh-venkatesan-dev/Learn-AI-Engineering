@@ -1,0 +1,275 @@
+{
+ "track": "mcp",
+ "id": "02",
+ "title": "Building servers",
+ "summary": "Everything a server can offer, and everything you can put around it. Tools with validated arguments, typed results, images, annotations, masked errors and timeouts. Resources the application reads, and prompts the user picks, with completions. A context that logs, reports progress and reads the server's own data. Questions to the user (elicitation) and requests to the client's own model (sampling). Shared resources and injected values the model can't set. Middleware around every request, and gateways composed from many servers. The Nimbus server grows into a support server and an ops server behind one gateway. The evaluation settles where the refund policy belongs.",
+ "learn": [
+  "**Tools in depth**: validation, output schemas, images, ToolResult, annotations, error masking, timeouts",
+  "**Resources** (the app reads) vs **tools** (the model calls), templates and binary content",
+  "**Prompts** the user picks, multi-message templates, **completions**",
+  "**Context**: progress, logs, the server's own resources and prompts, request info",
+  "**Elicitation** and **sampling**: the guard pattern for asking the user and borrowing the client's model",
+  "**Lifespan, dependency injection, middleware, composition and proxies**"
+ ],
+ "flow": "Nimbus Gateway (staff | public: internal tools hidden)  ← audit · rate limit · caching middleware\n  ├─ support_*  get_order · cafe_menu_item · check_refund · loyalty_points · escalate_to_human · cancel_order (asks first)\n  │             resources: nimbus://policies/refunds · nimbus://menu · nimbus://orders/{id}{?fields} · docs://{name}\n  │             prompt: support_reply (+ completions)\n  └─ ops_*      weekly_numbers · weekly_report (progress) · review_digest (sampling: the caller's model)",
+ "labs": [
+  {
+   "lab": "mcp.tools-depth",
+   "icon": "🧰",
+   "covers": [
+    "mcp.l05"
+   ],
+   "explain": "A delivery quote with **validated** arguments and a **typed** result, a receipt **image**, a **ToolResult** with separate views, **annotations**, a database password leaked by an unmasked error (and hidden by a masked one), and a **timeout**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.mcp.m02_servers",
+     "symbol": "tools_server",
+     "why": "The tools.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.resources",
+   "icon": "📄",
+   "covers": [
+    "mcp.l06"
+   ],
+   "explain": "The Nimbus server's **resources**: the refund policy, the menu, orders by id with **?fields**, public documents (staff ones refused), a **binary** receipt, a wildcard that refuses '..', and an answer from context **the app** chose.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.mcp.server",
+     "symbol": "refund_policy",
+     "why": "The policy resource.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.mcp.server",
+     "symbol": "order_resource",
+     "why": "A resource template.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.prompts",
+   "icon": "💬",
+   "covers": [
+    "mcp.l07"
+   ],
+   "explain": "The **support_reply** prompt rendered and run, a **multi-message** house-style prompt, and **completions** for order ids and prompt arguments.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.mcp.server",
+     "symbol": "support_reply",
+     "why": "The prompt.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.mcp.server",
+     "symbol": "complete",
+     "why": "Completions.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.context",
+   "icon": "🛰️",
+   "covers": [
+    "mcp.l08"
+   ],
+   "explain": "The ops server's weekly report with **progress** café by café, and a tool that **logs to the client**, reads its own server's **resource**, and reports the **request id**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.mcp.ops",
+     "symbol": "weekly_report",
+     "why": "Progress.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.elicitation",
+   "icon": "🙋",
+   "covers": [
+    "mcp.l09"
+   ],
+   "explain": "A table booking that asks **two questions** with **request_state** carried between rounds, a **declined** booking, and **cancel_order** confirming in both protocol eras.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.mcp.server",
+     "symbol": "cancel_order",
+     "why": "Confirm, then cancel.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.sampling",
+   "icon": "🧠",
+   "covers": [
+    "mcp.l10"
+   ],
+   "explain": "The ops server's **review_digest** has no model: it asks the **caller's model** to summarise a café's low reviews, and a client can **refuse**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.mcp.ops",
+     "symbol": "review_digest",
+     "why": "Sampling.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.lifespan",
+   "icon": "🔌",
+   "covers": [
+    "mcp.l11"
+   ],
+   "explain": "A server that opens its database **once**, tools that share it, **injected** values (the order, the staff member, a per-call audit log), and a client that can't override them.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.mcp.m02_servers",
+     "symbol": "lifespan_server",
+     "why": "Lifespan and Depends.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.middleware",
+   "icon": "🧅",
+   "covers": [
+    "mcp.l12"
+   ],
+   "explain": "Middleware **order**, an internal tool **hidden and refused**, requests normalised and results stamped, request **state**, **caching** and **rate limiting**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.mcp.m02_servers",
+     "symbol": "middleware_classes",
+     "why": "The middleware.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.composition",
+   "icon": "🏗️",
+   "covers": [
+    "mcp.l13"
+   ],
+   "explain": "The Nimbus **gateway** (support + ops, prefixed), its **public** variant, a **live** link, a **proxy** for a stdio server, and a **ToolTransform**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.mcp.gateway",
+     "symbol": "build_gateway",
+     "why": "The gateway.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the Nimbus MCP servers and gateway",
+  "summary": "The support server offers its tools plus a confirmed cancellation, the refund policy and other data as resources, and a reply prompt with completions. A new ops server offers the weekly numbers to staff, with progress, and a review digest written by the caller's model. One gateway mounts both servers behind an audit log, rate limiting and caching; the public variant hides everything internal.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "support",
+    "title": "Support server",
+    "icon": "🛠️",
+    "tagline": "Tools, resources, prompts",
+    "explain": "cancel_order is destructive and asks the user first (the modern guard pattern, with ctx.elicit for legacy clients). The policy, menu and orders are resources, documents are served only if public, and HTML pages lose their navigation before a model reads them.",
+    "code": [
+     {
+      "module": "nimbus.mcp.server",
+      "symbol": "cancel_order",
+      "why": "Confirm first.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.mcp.server",
+      "symbol": "document",
+      "why": "Public documents only.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Annotate every tool: hosts decide what needs a confirmation from destructiveHint."
+    ]
+   },
+   {
+    "id": "gateway",
+    "title": "Gateway",
+    "icon": "🚪",
+    "tagline": "One door, two audiences",
+    "explain": "build_gateway mounts support and ops with namespaces; public=True disables everything tagged internal (listed nowhere, refused if called). Audit, rate limiting and caching wrap every request.",
+    "code": [
+     {
+      "module": "nimbus.mcp.gateway",
+      "symbol": "build_gateway",
+      "why": "The gateway.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.mcp.gateway",
+      "symbol": "Audit",
+      "why": "The audit log.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Hiding a tool is not authorisation: MCP Module 4 adds tokens and scopes."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "Where the policy belongs",
+    "lab": "mcp.policy-eval",
+    "explain": "Eight policy questions (damaged bags, packed orders, refund timing, café drinks), answered with the server's tools, with and without the refund-policy resource read into the system prompt.\n\n| | right answers | model calls | tokens | p50 |\n|---|---|---|---|---|\n| tools only | 1/8 | 1.50 | 1,102 | 3.8 s |\n| **tools + policy resource in context** | **8/8** | **1.25** | **1,061** | **2.8 s** |\n\nWith tools only, the model invented the answers: refunds in \"3–5 business days\", photos \"via WhatsApp to +91 98765 43210\" or to \"support@nimbuscoffee.com\" (neither exists). It also confused a café latte with a bag of beans. With the policy in context every answer was right, and the run was cheaper, because the model stopped hunting through tools for an answer they don't have.",
+    "code": [
+     {
+      "module": "academy.labs.mcp.m02_servers",
+      "symbol": "evaluate_policy_context",
+      "why": "The evaluation.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "If the model needs a fact on every turn, the app should put it in context; don't hope the model calls a tool for it."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/mcp/server.py",
+   "role": "Support server: tools, resources, prompts, completions, cancel with elicitation"
+  },
+  {
+   "path": "src/nimbus/mcp/ops.py",
+   "role": "Ops server: weekly numbers, progress, sampling"
+  },
+  {
+   "path": "src/nimbus/mcp/gateway.py",
+   "role": "The gateway: mounts, audit, rate limit, caching, public variant"
+  },
+  {
+   "path": "data/eval/policy_questions.json",
+   "role": "8 policy questions"
+  },
+  {
+   "path": "src/academy/labs/mcp/m02_servers.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "List the support server's tools and resources",
+   "cmd": "uv run fastmcp list src/nimbus/mcp/server.py"
+  }
+ ]
+}

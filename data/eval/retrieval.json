@@ -1,0 +1,416 @@
+[
+ {
+  "id": "q01",
+  "question": "How many days of paid annual leave does an employee get?",
+  "evidence": [
+   "24 days of paid annual leave"
+  ],
+  "source": "handbook.md",
+  "kind": "number"
+ },
+ {
+  "id": "q02",
+  "question": "How many unused leave days can be carried over to next year?",
+  "evidence": [
+   "maximum of 8 days"
+  ],
+  "source": "handbook.md",
+  "kind": "number"
+ },
+ {
+  "id": "q03",
+  "question": "How much holiday do I get?",
+  "evidence": [
+   "24 days of paid annual leave"
+  ],
+  "source": "handbook.md",
+  "kind": "paraphrase"
+ },
+ {
+  "id": "q04",
+  "question": "Can I work from home?",
+  "evidence": [
+   "work remotely"
+  ],
+  "source": "handbook.md",
+  "kind": "paraphrase"
+ },
+ {
+  "id": "q05",
+  "question": "Who approves remote work outside India?",
+  "evidence": [
+   "Meera Iyer"
+  ],
+  "source": "handbook.md",
+  "kind": "exact"
+ },
+ {
+  "id": "q06",
+  "question": "When are salaries paid?",
+  "evidence": [
+   "last working day of every month"
+  ],
+  "source": "handbook.md",
+  "kind": "general"
+ },
+ {
+  "id": "q07",
+  "question": "What is the yearly learning budget per employee?",
+  "evidence": [
+   "30,000 rupees"
+  ],
+  "source": "handbook.md",
+  "kind": "number"
+ },
+ {
+  "id": "q08",
+  "question": "What is the hotel limit per night on business trips?",
+  "evidence": [
+   "6,000 rupees per night"
+  ],
+  "source": "handbook.md",
+  "kind": "number"
+ },
+ {
+  "id": "q09",
+  "question": "How quickly must a lost laptop be reported?",
+  "evidence": [
+   "within 24 hours"
+  ],
+  "source": "handbook.md",
+  "kind": "general"
+ },
+ {
+  "id": "q10",
+  "question": "How long must passwords be?",
+  "evidence": [
+   "at least 14 characters"
+  ],
+  "source": "handbook.md",
+  "kind": "number"
+ },
+ {
+  "id": "q11",
+  "question": "Do I need a doctor's note when I'm off sick?",
+  "evidence": [
+   "doctor's note"
+  ],
+  "source": "handbook.md",
+  "kind": "general"
+ },
+ {
+  "id": "q12",
+  "question": "A supplier sent me an expensive present. What should I do?",
+  "evidence": [
+   "2,000 rupees must be declared"
+  ],
+  "source": "handbook.md",
+  "kind": "paraphrase"
+ },
+ {
+  "id": "q13",
+  "question": "What is the IT help email address?",
+  "evidence": [
+   "it-help@nimbus.example"
+  ],
+  "source": "handbook.md",
+  "kind": "exact"
+ },
+ {
+  "id": "q14",
+  "question": "Which blend is best for espresso?",
+  "evidence": [
+   "best for espresso"
+  ],
+  "source": "products.txt",
+  "kind": "general"
+ },
+ {
+  "id": "q15",
+  "question": "How much is a 250 g bag of Nilgiri Sunrise?",
+  "evidence": [
+   "costs 720 rupees"
+  ],
+  "source": "products.txt",
+  "kind": "number"
+ },
+ {
+  "id": "q16",
+  "question": "When do orders ship for free?",
+  "evidence": [
+   "above 1,500 rupees ship for free"
+  ],
+  "source": "products.txt",
+  "kind": "number"
+ },
+ {
+  "id": "q17",
+  "question": "Can I send back coffee I've already opened?",
+  "evidence": [
+   "Opened bags cannot be returned"
+  ],
+  "source": "products.txt",
+  "kind": "paraphrase"
+ },
+ {
+  "id": "q18",
+  "question": "What discount do subscriptions give?",
+  "evidence": [
+   "15% discount"
+  ],
+  "source": "products.txt",
+  "kind": "number"
+ },
+ {
+  "id": "q19",
+  "question": "How long does delivery take to metro cities?",
+  "evidence": [
+   "2 business days"
+  ],
+  "source": "faq.html",
+  "kind": "number"
+ },
+ {
+  "id": "q20",
+  "question": "How do I change my delivery address?",
+  "evidence": [
+   "orders@nimbus.example"
+  ],
+  "source": "faq.html",
+  "kind": "exact"
+ },
+ {
+  "id": "q21",
+  "question": "How many points do I need for a free bag?",
+  "evidence": [
+   "500 points"
+  ],
+  "source": "faq.html",
+  "kind": "number"
+ },
+ {
+  "id": "q22",
+  "question": "Do loyalty points expire?",
+  "evidence": [
+   "expire 12 months"
+  ],
+  "source": "faq.html",
+  "kind": "general"
+ },
+ {
+  "id": "q23",
+  "question": "Is there internet in the cafés?",
+  "evidence": [
+   "free Wi-Fi"
+  ],
+  "source": "faq.html",
+  "kind": "paraphrase"
+ },
+ {
+  "id": "q24",
+  "question": "What was Nimbus's total revenue in 2025?",
+  "evidence": [
+   "208 crore"
+  ],
+  "source": "annual_report_2025.pdf",
+  "kind": "number"
+ },
+ {
+  "id": "q25",
+  "question": "How much revenue did the South region make in 2025?",
+  "evidence": [
+   "South",
+   "92"
+  ],
+  "source": "annual_report_2025.pdf",
+  "kind": "table"
+ },
+ {
+  "id": "q26",
+  "question": "Which region grew slowest, and why?",
+  "evidence": [
+   "Kolkata",
+   "renovation"
+  ],
+  "source": "annual_report_2025.pdf",
+  "kind": "general"
+ },
+ {
+  "id": "q27",
+  "question": "When will the Dubai café open?",
+  "evidence": [
+   "Dubai in June 2026"
+  ],
+  "source": "annual_report_2025.pdf",
+  "kind": "general"
+ },
+ {
+  "id": "q28",
+  "question": "How many new baristas does Nimbus plan to hire?",
+  "evidence": [
+   "400 new baristas"
+  ],
+  "source": "annual_report_2025.pdf",
+  "kind": "number"
+ },
+ {
+  "id": "q29",
+  "question": "How many cafés does Nimbus run?",
+  "evidence": [
+   "64 cafés"
+  ],
+  "source": "annual_report_2025.pdf",
+  "kind": "number"
+ },
+ {
+  "id": "q30",
+  "question": "How much does an oat latte cost?",
+  "evidence": [
+   "Oat Latte",
+   "220"
+  ],
+  "source": "menu.csv",
+  "kind": "table"
+ },
+ {
+  "id": "q31",
+  "question": "Is the cold brew vegan?",
+  "evidence": [
+   "Cold Brew",
+   "yes"
+  ],
+  "source": "menu.csv",
+  "kind": "table"
+ },
+ {
+  "id": "q32",
+  "question": "What is the status of order NC-1003?",
+  "evidence": [
+   "NC-1003",
+   "cancelled"
+  ],
+  "source": "orders.json",
+  "kind": "exact"
+ },
+ {
+  "id": "q33",
+  "question": "How many tonnes of beans does Green Valley supply each quarter?",
+  "evidence": [
+   "12 tonnes"
+  ],
+  "source": "supplier_contract.docx",
+  "kind": "number"
+ },
+ {
+  "id": "q34",
+  "question": "What is the minimum SCA cupping score for a lot?",
+  "evidence": [
+   "84 points"
+  ],
+  "source": "supplier_contract.docx",
+  "kind": "number"
+ },
+ {
+  "id": "q35",
+  "question": "What share of the price is paid on delivery?",
+  "evidence": [
+   "On delivery",
+   "60%"
+  ],
+  "source": "supplier_contract.docx",
+  "kind": "table"
+ },
+ {
+  "id": "q36",
+  "question": "What was revenue in Q1 2026?",
+  "evidence": [
+   "58 crore"
+  ],
+  "source": "q1_2026_review.pptx",
+  "kind": "number"
+ },
+ {
+  "id": "q37",
+  "question": "Which café had the highest sales in Q1?",
+  "evidence": [
+   "Indiranagar",
+   "38.5"
+  ],
+  "source": "q1_2026_review.pptx",
+  "kind": "table"
+ },
+ {
+  "id": "q38",
+  "question": "Could the Dubai opening be delayed?",
+  "evidence": [
+   "slip from June to August"
+  ],
+  "source": "q1_2026_review.pptx",
+  "kind": "paraphrase"
+ },
+ {
+  "id": "q39",
+  "question": "Who manages the Park Street café?",
+  "evidence": [
+   "Park Street",
+   "Ananya Bose"
+  ],
+  "source": "cafe_sales_q1_2026.xlsx",
+  "kind": "table"
+ },
+ {
+  "id": "q40",
+  "question": "By how much will green bean prices rise?",
+  "evidence": [
+   "410 to 447"
+  ],
+  "source": "green_valley_price_notice.eml",
+  "kind": "number"
+ },
+ {
+  "id": "q41",
+  "question": "When is the roastery closed for maintenance?",
+  "evidence": [
+   "14 March 2026"
+  ],
+  "source": "scanned_notice.pdf",
+  "kind": "general"
+ },
+ {
+  "id": "q42",
+  "question": "When is the fire safety drill?",
+  "evidence": [
+   "25 March 2026"
+  ],
+  "source": "scanned_notice.pdf",
+  "kind": "general"
+ },
+ {
+  "id": "q43",
+  "question": "What was the total on the Indiranagar café receipt?",
+  "evidence": [
+   "787.50"
+  ],
+  "source": "receipt_photo.png",
+  "kind": "number"
+ },
+ {
+  "id": "q44",
+  "question": "What was revenue in Q3 2025 according to the chart?",
+  "evidence": [
+   "Q3",
+   "62"
+  ],
+  "source": "sales_chart.png",
+  "kind": "table"
+ },
+ {
+  "id": "q45",
+  "question": "In the loyalty code, how many points are needed to redeem a free bag?",
+  "evidence": [
+   "REDEEM_THRESHOLD = 500"
+  ],
+  "source": "loyalty.py",
+  "kind": "exact"
+ }
+]

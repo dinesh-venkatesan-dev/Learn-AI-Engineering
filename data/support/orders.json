@@ -1,0 +1,252 @@
+{
+ "today": "2026-03-20",
+ "orders": [
+  {
+   "order_id": "NC-12093",
+   "customer_id": "c-1042",
+   "customer": "Priya S.",
+   "items": [
+    {
+     "name": "Nilgiri Sunrise",
+     "qty": 1,
+     "price": 720
+    }
+   ],
+   "total": 720,
+   "status": "delivered",
+   "ordered_on": "2026-03-01",
+   "delivered_on": "2026-03-04",
+   "opened": false
+  },
+  {
+   "order_id": "NC-20417",
+   "customer_id": "c-1042",
+   "customer": "Priya S.",
+   "items": [
+    {
+     "name": "Monsoon Malabar Reserve",
+     "qty": 2,
+     "price": 650
+    }
+   ],
+   "total": 1300,
+   "status": "delivered",
+   "ordered_on": "2026-02-10",
+   "delivered_on": "2026-02-13",
+   "opened": true
+  },
+  {
+   "order_id": "NC-31877",
+   "customer_id": "c-2210",
+   "customer": "Arjun M.",
+   "items": [
+    {
+     "name": "Monsoon Malabar Reserve",
+     "qty": 2,
+     "price": 650
+    }
+   ],
+   "total": 1300,
+   "status": "delivered",
+   "ordered_on": "2026-03-02",
+   "delivered_on": "2026-03-05",
+   "opened": null
+  },
+  {
+   "order_id": "NC-4410",
+   "customer_id": "c-3301",
+   "customer": "Meena K.",
+   "items": [
+    {
+     "name": "Nilgiri Sunrise",
+     "qty": 1,
+     "price": 720
+    }
+   ],
+   "total": 720,
+   "status": "delivered",
+   "ordered_on": "2026-03-08",
+   "delivered_on": "2026-03-11",
+   "opened": false
+  },
+  {
+   "order_id": "NC-55021",
+   "customer_id": "c-3301",
+   "customer": "Meena K.",
+   "items": [
+    {
+     "name": "Chikmagalur Classic",
+     "qty": 1,
+     "price": 560
+    }
+   ],
+   "total": 560,
+   "status": "processing",
+   "ordered_on": "2026-03-18",
+   "delivered_on": null,
+   "opened": null
+  },
+  {
+   "order_id": "NC-55022",
+   "customer_id": "c-3301",
+   "customer": "Meena K.",
+   "items": [
+    {
+     "name": "Chikmagalur Classic",
+     "qty": 1,
+     "price": 560
+    }
+   ],
+   "total": 560,
+   "status": "processing",
+   "ordered_on": "2026-03-18",
+   "delivered_on": null,
+   "opened": null
+  },
+  {
+   "order_id": "NC-66310",
+   "customer_id": "c-4120",
+   "customer": "Lakshmi R.",
+   "items": [
+    {
+     "name": "Chikmagalur Classic",
+     "qty": 3,
+     "price": 560
+    }
+   ],
+   "total": 1680,
+   "status": "delivered",
+   "ordered_on": "2026-03-06",
+   "delivered_on": "2026-03-09",
+   "opened": true
+  },
+  {
+   "order_id": "NC-78123",
+   "customer_id": "c-5005",
+   "customer": "Ravi T.",
+   "items": [
+    {
+     "name": "Nilgiri Sunrise",
+     "qty": 1,
+     "price": 720
+    },
+    {
+     "name": "Chikmagalur Classic",
+     "qty": 1,
+     "price": 560
+    }
+   ],
+   "total": 1280,
+   "status": "shipped",
+   "ordered_on": "2026-03-15",
+   "delivered_on": null,
+   "opened": null
+  },
+  {
+   "order_id": "NC-90112",
+   "customer_id": "c-6060",
+   "customer": "Farah Z.",
+   "items": [
+    {
+     "name": "Monsoon Malabar Reserve",
+     "qty": 1,
+     "price": 650
+    }
+   ],
+   "total": 650,
+   "status": "delivered",
+   "ordered_on": "2026-03-10",
+   "delivered_on": "2026-03-14",
+   "opened": false
+  },
+  {
+   "order_id": "NC-12500",
+   "customer_id": "c-7007",
+   "customer": "Vikram P.",
+   "items": [
+    {
+     "name": "Nilgiri Sunrise",
+     "qty": 2,
+     "price": 720
+    },
+    {
+     "name": "Monsoon Malabar Reserve",
+     "qty": 1,
+     "price": 650
+    }
+   ],
+   "total": 2090,
+   "status": "packed",
+   "ordered_on": "2026-03-17",
+   "delivered_on": null,
+   "opened": null
+  },
+  {
+   "order_id": "NC-13001",
+   "customer_id": "c-2210",
+   "customer": "Arjun M.",
+   "items": [
+    {
+     "name": "Chikmagalur Classic",
+     "qty": 1,
+     "price": 560
+    }
+   ],
+   "total": 560,
+   "status": "cancelled",
+   "ordered_on": "2026-03-12",
+   "delivered_on": null,
+   "opened": null
+  },
+  {
+   "order_id": "NC-14002",
+   "customer_id": "c-8080",
+   "customer": "Anita D.",
+   "items": [
+    {
+     "name": "Nilgiri Sunrise",
+     "qty": 1,
+     "price": 720
+    }
+   ],
+   "total": 720,
+   "status": "delivered",
+   "ordered_on": "2026-02-20",
+   "delivered_on": "2026-02-24",
+   "opened": false
+  }
+ ],
+ "subscriptions": [
+  {
+   "customer_id": "c-1042",
+   "blend": "Nilgiri Sunrise",
+   "every_weeks": 4,
+   "next_delivery": "2026-03-28",
+   "paused_until": null
+  },
+  {
+   "customer_id": "c-3301",
+   "blend": "Chikmagalur Classic",
+   "every_weeks": 2,
+   "next_delivery": "2026-03-24",
+   "paused_until": null
+  },
+  {
+   "customer_id": "c-6060",
+   "blend": "Monsoon Malabar Reserve",
+   "every_weeks": 6,
+   "next_delivery": "2026-04-10",
+   "paused_until": null
+  }
+ ],
+ "customers": {
+  "c-1042": "Priya S.",
+  "c-2210": "Arjun M.",
+  "c-3301": "Meena K.",
+  "c-4120": "Lakshmi R.",
+  "c-5005": "Ravi T.",
+  "c-6060": "Farah Z.",
+  "c-7007": "Vikram P.",
+  "c-8080": "Anita D."
+ }
+}

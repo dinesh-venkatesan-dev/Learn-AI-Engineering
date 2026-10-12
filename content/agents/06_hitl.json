@@ -1,0 +1,230 @@
+{
+ "track": "agents",
+ "id": "06",
+ "title": "Human-in-the-loop",
+ "summary": "Some steps shouldn't run on a model's judgement alone: moving money, changing a customer's account. This module pauses a graph with interrupt() and resumes it with a person's answer, and puts a review step between an agent and its tools: approve, edit or reject each sensitive call. It then covers the harder cases (validation loops, parallel questions, breakpoints, edits while paused) and the rules that keep interrupts correct (a node re-runs from the top on resume, so side effects, order and try/except matter). The support desk gets approvals: the customer confirms subscription changes, a teammate approves every refund.",
+ "learn": [
+  "**interrupt() and resume**: what's saved while a run waits, and why the node runs twice",
+  "**Reviewing tool calls**: approve, edit in place, reject with a reason; safe tools run without asking",
+  "**Advanced interrupts**: ask until valid, parallel questions by id, static breakpoints, update_state while paused",
+  "**Rules**: response_schema, idempotent side effects, a fixed order, no bare try/except, plain-data payloads"
+ ],
+ "flow": "agent → review ─(sensitive call?)→ interrupt(): the customer (pause_subscription) or a teammate (issue_refund)\n              │                     approve → run · edit → run with new arguments · reject → answer with the reason\n              └──────────────────→ tools (lookups run without asking) → agent → … → file_ticket",
+ "labs": [
+  {
+   "lab": "agents.interrupt-basics",
+   "icon": "⏸️",
+   "covers": [
+    "lg.l34"
+   ],
+   "explain": "A refund that waits for a manager: **interrupt(value)**, what's saved while it waits (**next**, **interrupts**), **Command(resume=…)**, the node that ran **twice**, and a graph without a checkpointer that pauses but can't resume.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m06_hitl",
+     "symbol": "approval_graph",
+     "why": "Pause and resume.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.approve-edit-reject",
+   "icon": "✅",
+   "covers": [
+    "lg.l35"
+   ],
+   "explain": "The support desk with approvals on one refund request, answered three ways by a teammate (**approve**, **edit** the amount, **reject** with a reason), and a lookup that runs **without asking**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.approvals",
+     "symbol": "review_calls",
+     "why": "The review.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.support.approvals",
+     "symbol": "skip_rejected",
+     "why": "Rejected calls answered, not run.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.advanced-interrupts",
+   "icon": "🔁",
+   "covers": [
+    "lg.l36"
+   ],
+   "explain": "A quantity asked **until it's valid**, two **parallel** questions answered together by interrupt id, and a **static breakpoint** before a charge with the state **fixed while paused**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m06_hitl",
+     "symbol": "validation_loop",
+     "why": "Ask until valid.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m06_hitl",
+     "symbol": "breakpoint_and_edit",
+     "why": "Breakpoint and update_state.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.interrupt-rules",
+   "icon": "📏",
+   "covers": [
+    "lg.l37"
+   ],
+   "explain": "Six rules, each broken once and kept once: **response_schema**, side effects before interrupt() (two emails), interrupts matched by **order**, a **try/except** that swallows the pause, a payload with a function, and a **subgraph** called inside a node.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m06_hitl",
+     "symbol": "typed_answers",
+     "why": "response_schema.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m06_hitl",
+     "symbol": "side_effects",
+     "why": "Side effects run twice.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: approvals on the support desk",
+  "summary": "The desk gains an issue_refund tool and a review node. A subscription pause is confirmed by the customer; a refund is approved by a teammate, who can approve, change the amount (at most the order total, asked again otherwise) or reject with a reason the agent passes on. Lookups, escalations and memories run without asking. The refund tool still checks ownership and the policy in code, so a careless approval can't refund an order outside the window.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "review",
+    "title": "Review",
+    "icon": "🧑‍⚖️",
+    "tagline": "A person before money moves",
+    "explain": "`review_node` runs between the agent and the tools. For each sensitive call it asks with `interrupt(payload, response_schema=Review)`, always in the same order, so a resume matches answers to questions. Edits replace the call in the same AIMessage (same id); decisions go into state.",
+    "code": [
+     {
+      "module": "nimbus.support.desk",
+      "symbol": "build_support_desk",
+      "why": "The review node.",
+      "notes": [
+       {
+        "match": "return Review.model_validate(interrupt(payload, response_schema=Review))",
+        "text": "One question per sensitive call; the answer is validated."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.approvals",
+      "symbol": "review_calls",
+      "why": "Approve, edit (validated, asked again), reject.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Keep the payload plain data: it waits in the checkpoint, maybe for days."
+    ]
+   },
+   {
+    "id": "reject",
+    "title": "Reject",
+    "icon": "🚫",
+    "tagline": "Rejected calls get an answer",
+    "explain": "ToolNode runs every call of the last AIMessage, rejected ones included. A first attempt that only appended rejection messages ran the rejected call anyway. `skip_rejected` wraps each call (`wrap_tool_call`) and answers a rejected one with the reviewer's reason instead of running it, so every call has its ToolMessage and the agent can explain.",
+    "code": [
+     {
+      "module": "nimbus.support.approvals",
+      "symbol": "skip_rejected",
+      "why": "The wrapper.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Test reject with mixed calls (a lookup and a refund in one message): that's where conversations break."
+    ]
+   },
+   {
+    "id": "refund",
+    "title": "Refund",
+    "icon": "💸",
+    "tagline": "Policy in code, approval by a person",
+    "explain": "`issue_refund` checks ownership, status, opened, the 14-day window and the amount, in code. Approval is a second check, not the only one.",
+    "code": [
+     {
+      "module": "nimbus.support.approvals",
+      "symbol": "refund_tool",
+      "why": "The refund tool.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Log every decision with who made it: the review dict in state already has it."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "8 requests, scripted reviewers",
+    "lab": "agents.approvals-eval",
+    "explain": "Each request has a scripted reviewer: approve, edit (a different number of weeks, a smaller refund) or reject. Unscripted sensitive calls are rejected. The same requests run through the desk with refunds but no approvals.\n\n| | right actions (after review) | actions nobody wanted | reply matches what happened | questions to a person | model calls |\n|---|---|---|---|---|---|\n| no approvals | 4/8 | 4 | 7/8 | 0 | 2.88 |\n| **approvals** | **8/8** | **0** | **8/8** | 0.62 | 2.75 |\n\nWithout approvals: a customer's pause for 3 weeks couldn't be changed to 4, \"I only drink decaf these days\" paused a subscription, and two refunds a teammate would have reduced or refused went out in full. With approvals, the rejected refund was answered with the teammate's reason, and the agent escalated instead of arguing. In this run the agent didn't attempt the out-of-window refund at all (check_refund said no); a unit test shows the tool refuses it even when approved.",
+    "code": [
+     {
+      "module": "academy.labs.agents.m06_hitl",
+      "symbol": "evaluate_approvals",
+      "why": "The evaluation.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.support.approval_eval",
+      "symbol": "score",
+      "why": "Scoring.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Track how often reviewers edit or reject: a rising rate means the agent is proposing the wrong actions."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/support/approvals.py",
+   "role": "Review schema, the review logic, the refund tool, the reject wrapper"
+  },
+  {
+   "path": "src/nimbus/support/desk.py",
+   "role": "The review node between agent and tools"
+  },
+  {
+   "path": "src/nimbus/support/approval_eval.py",
+   "role": "Scripted reviewers and scoring"
+  },
+  {
+   "path": "data/eval/approval_scenarios.json",
+   "role": "8 requests with reviewer decisions"
+  },
+  {
+   "path": "src/academy/labs/agents/m06_hitl.py",
+   "role": "The labs"
+  },
+  {
+   "path": "tests/test_approvals.py",
+   "role": "Review logic without a model"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Ask for a refund (pauses for approval)",
+   "cmd": "uv run nimbus support desk --customer c-6060 --conversation r1 \"Refund NC-90112 please, it's unopened.\""
+  },
+  {
+   "label": "A teammate approves",
+   "cmd": "uv run nimbus support approve --customer c-6060 --conversation r1 --decision approve"
+  }
+ ]
+}

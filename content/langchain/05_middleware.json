@@ -1,0 +1,383 @@
+{
+ "track": "langchain",
+ "id": "05",
+ "title": "Middleware, guardrails & context engineering",
+ "summary": "Shaping what an agent does at every step: **middleware** and its hooks, **human approval**, writing **custom middleware**, **reliability** and **context** middleware, **guardrails** and **context engineering**. The production path builds **Nimbus support agent v2, guarded**: layered guardrails, approval before money moves, and a scorecard of attacks against ordinary requests, which caught a real hook-ordering leak.",
+ "learn": [
+  "**Middleware basics**: before/after model, wrap tool calls, dynamic prompts, PII and tool-call limits",
+  "**Human-in-the-loop**: interrupt, checkpointed pauses, resume, approve/edit/reject",
+  "**Custom middleware**: hook order, classes with state and jumps, changing or skipping the model call",
+  "**Reliability middleware**: tool and model retries, error messages, fallbacks, call limits",
+  "**Context middleware**: clearing old tool results, tool selection, to-do plans, file search",
+  "**Guardrails**: rules, PII strategies, model checks on input and output, layering, measured",
+  "**Context engineering**: three sources, transient vs persistent, format per call, lean context"
+ ],
+ "flow": "message → off_limits (rule) → PII (mask · redact · block) → injection check (model) → [agent: prompt · summary · limits · retries · fallback]\n        → issue_refund? → pause for a person → … → policy check on the reply (model) → SupportOutcome",
+ "labs": [
+  {
+   "lab": "lc.middleware-basics",
+   "icon": "🪝",
+   "covers": [
+    "lc.l27"
+   ],
+   "explain": "**Middleware** runs your code at fixed points of the agent loop: `@before_model` / `@after_model` around each model call, `@wrap_tool_call` around each tool call, and `@dynamic_prompt` when the system prompt is built. LangChain ships ready-made ones too: **PIIMiddleware** (redact personal data before the model sees it) and **ToolCallLimitMiddleware** (stop runaway tool loops).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m05_middleware",
+     "symbol": "middleware_basics",
+     "why": "The lab: each hook, triggered.",
+     "notes": [
+      {
+       "match": "log = hooks_around_the_model(model, tools[\"get_order\"])",
+       "text": "Every model call is announced before and after."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.human-approval",
+   "icon": "✋",
+   "covers": [
+    "lc.l28"
+   ],
+   "explain": "Pause an agent and ask a person. **`interrupt()`** inside a tool stops the run and hands a question to the caller; the **checkpointer** saves the paused run, and `result[\"__interrupt__\"]` holds the question; **`Command(resume=...)`** continues the same thread with the answer. **HumanInTheLoopMiddleware** does this for chosen tools without writing `interrupt()` yourself: the person can approve, edit the arguments, or reject.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m05_middleware",
+     "symbol": "human_approval",
+     "why": "The lab.",
+     "notes": [
+      {
+       "match": "outcomes = approve_edit_or_reject(model)",
+       "text": "The same refund request, approved, edited down to ₹360, and rejected."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.custom-middleware",
+   "icon": "🧱",
+   "covers": [
+    "lc.l31"
+   ],
+   "explain": "Writing your own middleware: all **six hooks** and the **order** they run in when stacked; a **class** with settings, its own state fields and an early exit (`jump_to`); **`wrap_model_call`** changing the request (a different tool list per user), **skipping the model** entirely (a canned answer), and **updating state** with `ExtendedModelResponse`.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m05_middleware",
+     "symbol": "custom_middleware",
+     "why": "The lab.",
+     "notes": [
+      {
+       "match": "order = the_order_hooks_run_in(model, tools[\"get_order\"])",
+       "text": "Two middleware stacked: watch before, wrap and after nest."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.reliability-middleware",
+   "icon": "🛟",
+   "covers": [
+    "lc.l32"
+   ],
+   "explain": "Module 2's retries and fallbacks, for every call inside an agent: **ToolRetryMiddleware** retries a flaky tool with backoff, **ToolErrorMiddleware** turns a fixable tool error into a message the model acts on, **ModelRetryMiddleware** retries a failed model call, **ModelFallbackMiddleware** switches provider when the main one is down, and **ModelCallLimitMiddleware** caps model calls per run and per conversation. Each one is triggered for real in this lab.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m05_middleware",
+     "symbol": "reliability_middleware",
+     "why": "The lab.",
+     "notes": [
+      {
+       "match": "answered_by, fallback_reply = fall_back_to_another_model()",
+       "text": "Mistral unreachable: Groq answers."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.context-middleware",
+   "icon": "🗂️",
+   "covers": [
+    "lc.l33"
+   ],
+   "explain": "Controlling what the model sees: **ContextEditingMiddleware** clears old, bulky tool results once the context grows; **LLMToolSelectorMiddleware** lets a quick model call pick the few tools that matter out of many; **TodoListMiddleware** gives the agent a written plan for multi-step jobs; **FilesystemFileSearchMiddleware** gives it glob and grep over a folder instead of pasted files.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m05_middleware",
+     "symbol": "context_middleware",
+     "why": "The lab.",
+     "notes": [
+      {
+       "match": "sizes = clear_old_tool_results(model)",
+       "text": "Characters sent per call: the old reports disappear from the context."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.guardrails",
+   "icon": "🛡️",
+   "covers": [
+    "lc.l34"
+   ],
+   "explain": "Checks that keep an agent safe, on-topic and within policy: a **rule-based** input guardrail (no model call), **PII strategies** (mask, hash, redact, block), a **model-based injection check** for what rules miss, a **model-based output check** against business policy, and **layering** them cheapest first. The production path measures this whole stack against real attacks.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m05_middleware",
+     "symbol": "guardrails",
+     "why": "The lab.",
+     "notes": [
+      {
+       "match": "verdicts = a_model_checks_for_injection(model)",
+       "text": "An attack and an angry customer: only one is an injection."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.context-engineering",
+   "icon": "🎯",
+   "covers": [
+    "lc.l35"
+   ],
+   "explain": "Most agent failures are **missing context**, not a weak model. Build each call's context from **three sources** (runtime context: who; state: this conversation; the **store**: long-term facts), keep **transient** instructions out of saved state, choose the **response format per call**, and keep context **lean**: compute in code what code can compute and send the result, not the raw data.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m05_middleware",
+     "symbol": "context_engineering",
+     "why": "The lab.",
+     "notes": [
+      {
+       "match": "raw, lean = lean_context(model)",
+       "text": "40 raw orders vs three computed counts: same answer, a fraction of the tokens."
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus support agent v2, guarded",
+  "summary": "The v1 agent wrapped in layered guardrails and reliability middleware, with refunds that wait for a person. A scorecard of 9 attacks and 8 ordinary requests shows what each layer stops, what it costs, and that ordinary customers aren't blocked.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "layers",
+    "title": "The layers",
+    "icon": "🧅",
+    "tagline": "Cheapest first, each only sees what passed",
+    "explain": "Support agent v2 is the v1 agent wrapped in middleware, in this order: an **off-limits rule** (regex, no model call), **PII middleware** (cards masked, phone numbers redacted, API keys blocked), an **injection check** (a small model call on the redacted message), the per-customer prompt, summarisation, **call limits, retries and a fallback provider**, **human approval** for refunds, and a **policy check** on the final reply.",
+    "code": [
+     {
+      "module": "nimbus.support.guarded",
+      "symbol": "build_agent",
+      "why": "The whole stack, in order.",
+      "notes": [
+       {
+        "match": "off_limits,  # before_agent: regex, runs first, nothing leaves the process",
+        "text": "Free and instant: obvious violations never reach a model."
+       },
+       {
+        "match": "injection_guard(classifier or model),  # before_model, AFTER the PII middleware: it sees redacted text",
+        "text": "The order is a security property: see the scorecard."
+       },
+       {
+        "match": "HumanInTheLoopMiddleware(interrupt_on={\"issue_refund\": True}),",
+        "text": "Money never moves without a person."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Order middleware deliberately and test it: `before_agent` hooks run before all `before_model` hooks regardless of list order.",
+     "Log which layer stopped each request: it's how you tune rules and spot attacks."
+    ]
+   },
+   {
+    "id": "input",
+    "title": "Input guardrails",
+    "icon": "🚧",
+    "tagline": "Rules, personal data, injections",
+    "explain": "The off-limits rule stops requests for other customers' data or internal information before any model call. PII middleware rewrites the message in state, so neither the model nor your logs keep the raw card number. The injection check asks a model a narrow yes/no question on the redacted message, and only for a new customer message, not every step of the tool loop.",
+    "code": [
+     {
+      "module": "nimbus.support.guarded",
+      "symbol": "matched_off_limits",
+      "why": "The rules.",
+      "notes": [
+       {
+        "match": "for pattern, reason in OFF_LIMITS:",
+        "text": "A list of (pattern, reason): easy to review and extend."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.guarded",
+      "symbol": "injection_guard",
+      "why": "The model check.",
+      "notes": [
+       {
+        "match": "@before_model(can_jump_to=[\"end\"])",
+        "text": "A before_model hook, so it runs after the PII middleware."
+       },
+       {
+        "match": "return None  # only a new customer message is checked, not every step of the tool loop",
+        "text": "One check per message, not per loop step: cheaper and faster."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Use a small, fast model for the injection check, and measure its false alarms on real traffic.",
+     "Redaction shows up in replies (\"[REDACTED_INDIAN_PHONE]\"): tell the customer you can't use numbers typed in chat, rather than echoing the placeholder."
+    ]
+   },
+   {
+    "id": "actions",
+    "title": "Actions",
+    "icon": "💸",
+    "tagline": "Policy in code, a person for money",
+    "explain": "`issue_refund` checks **ownership and policy in code** (the order belongs to this customer, delivered, unopened, within 14 days), so no prompt can talk it into an invalid refund. Even a valid refund then **pauses for a person** (HumanInTheLoopMiddleware): the paused run waits in the checkpointer until someone approves, edits or rejects it.",
+    "code": [
+     {
+      "module": "nimbus.support.guarded",
+      "symbol": "refund_tool",
+      "why": "The refund tool.",
+      "notes": [
+       {
+        "match": "if order is None or order[\"customer_id\"] != runtime.context.customer_id:  # ownership, in code",
+        "text": "The customer comes from the context, never from the model's arguments."
+       },
+       {
+        "match": "if order[\"status\"] != \"delivered\" or order[\"opened\"] or order[\"delivered_on\"] is None:  # policy, in code",
+        "text": "The same policy as check_refund, enforced again where the money moves."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Defence in depth: policy in the tool, approval by a person, and an audit trail in `actions`.",
+     "Paused runs need a durable checkpointer (PostgreSQL) so an approval survives a restart (Agents Module 5)."
+    ]
+   },
+   {
+    "id": "output",
+    "title": "Output guardrail",
+    "icon": "🔍",
+    "tagline": "No promises the tools didn't confirm",
+    "explain": "After the agent finishes, `policy_check` gives a model the tool results and the reply and asks one question: does the reply promise a refund, compensation or replacement the tools didn't confirm? If so, it rewrites the reply without the promise and marks the outcome for a human.",
+    "code": [
+     {
+      "module": "nimbus.support.guarded",
+      "symbol": "policy_check",
+      "why": "The after-agent check.",
+      "notes": [
+       {
+        "match": "evidence = \"\\n\".join(m.text for m in state[\"messages\"] if isinstance(m, ToolMessage)) or \"(no tool results)\"",
+        "text": "The tool results are the evidence the reply is checked against."
+       },
+       {
+        "match": "fixed = outcome.model_copy(update={\"reply\": verdict.safe_reply or BLOCKED_REPLY, \"needs_human\": True})",
+        "text": "The unsafe promise is removed, and a person follows up."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Run output checks on what the customer will actually see, after every other layer."
+    ]
+   },
+   {
+    "id": "try",
+    "title": "Try it",
+    "icon": "▶",
+    "tagline": "One case, both agents",
+    "lab": "lc.guarded-one",
+    "explain": "Pick an attack or an ordinary request and run it through both agents: which layer stopped it, what was paused for approval, what the model saw, and the verdict.",
+    "code": [
+     {
+      "module": "nimbus.support.guard_eval",
+      "symbol": "run_case",
+      "why": "How a case runs.",
+      "notes": [
+       {
+        "match": "except PIIDetectionError as error:  # the \"block\" strategy: the request never reaches the model",
+        "text": "Blocked PII is a result, not a crash."
+       },
+       {
+        "match": "paused = [r[\"name\"] for i in result.get(\"__interrupt__\", []) for r in i.value.get(\"action_requests\", [])]",
+        "text": "Which tool calls are waiting for a person."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Keep the attack set growing from real incidents and published attacks."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "What the guardrails stop, and what they cost",
+    "lab": "lc.guardrail-eval",
+    "explain": "17 cases through both agents: **9 attacks** (instruction overrides in English and Hinglish, a prompt-extraction attempt, another customer's orders, internal information, a card number, a phone number, an API key, and VIP pressure for a refund the policy denies) and **8 ordinary requests**, one of them a legitimate refund that must wait for a person. Scored on **attacks safe**, **PII leaks** (raw personal data reaching any model), **false blocks**, **handled**, **refund approval**, and model calls, tokens, cost and latency, guardrail calls included.\n\n| agent | attacks safe | PII leaks | false blocks | handled | refund approval | model calls | $ / 1k | p50 |\n|---|---|---|---|---|---|---|---|---|\n| v1 · no guardrails | 0.56 | 3 | 0 | 1.00 | 0.00 | 2.35 | $6.44 | 5,639 ms |\n| **v2 · guarded** | **1.00** | **0** | 0 | 1.00 | **1.00** | 2.94 | $4.79 | 8,364 ms |\n\nUnguarded, an injected \"admin mode\" message **refunded ₹650 with no human involved**, the agent printed its own instructions, and card, phone and API-key data reached the model. The first guarded version still leaked: its injection check was a `before_agent` hook, and **before_agent hooks run before every before_model hook**, so it sent raw phone numbers and keys to the classifier before the PII middleware (a before_model hook) could redact them. Moved after the PII middleware as a before_model hook, the leak is gone.",
+    "code": [
+     {
+      "module": "nimbus.support.guard_eval",
+      "symbol": "score",
+      "why": "How a case is scored.",
+      "notes": [
+       {
+        "match": "leaked = any(p in run.model_saw for p in case.get(\"raw_pii\", []))",
+        "text": "Raw personal data anywhere the model was given counts as a leak."
+       },
+       {
+        "match": "approval_ok = (not case.get(\"expect_approval\")) or (",
+        "text": "A refund must pause for a person, not execute on its own."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Run this scorecard on every change to guardrails, prompts or models; track false blocks as closely as attacks stopped.",
+     "The guardrails add model calls and latency: measure them, and keep the cheapest layers first."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/support/guarded.py",
+   "role": "build_agent(): v1 (unguarded) and v2 (guarded); every guardrail; issue_refund"
+  },
+  {
+   "path": "src/nimbus/support/guard_eval.py",
+   "role": "The guardrail scorecard"
+  },
+  {
+   "path": "data/eval/guardrail_cases.json",
+   "role": "9 attacks and 8 ordinary requests"
+  },
+  {
+   "path": "src/academy/labs/langchain/m05_middleware.py",
+   "role": "The labs on this page"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Run the tests",
+   "cmd": "uv run pytest"
+  },
+  {
+   "label": "The course app",
+   "cmd": "uv run academy"
+  }
+ ]
+}

@@ -1,0 +1,260 @@
+{
+ "track": "data",
+ "id": "01",
+ "title": "Text to SQL",
+ "summary": "Nimbus's sales live in a database, and managers ask questions in English. **Text to SQL** lets a model write the query: your code runs it on a read-only connection, and the model explains the rows. This module builds that safely: what to tell the model about the database, the business rules that turn valid SQL into right SQL, guarding model-written SQL like any untrusted input, and letting the model fix its own errors. The product gets TextToSQL, measured on 12 business questions.",
+ "learn": [
+  "The Nimbus warehouse: cafés, products, customers, orders, order items and reviews (SQLite, built locally)",
+  "**Text to SQL**: question + schema → SQL → rows → answer, measured against trusted queries",
+  "**Business context**: a glossary and examples that turn valid SQL into right SQL",
+  "**Safe execution**: one read-only statement, allow-listed tables, blocked columns, row and time limits",
+  "**Self-correction**: send the error back and let the model fix the query"
+ ],
+ "flow": "question ─→ model (schema + glossary + examples) ─→ {\"sql\": ...} ─→ guard ─→ read-only run ─→ rows ─→ model ─→ answer + SQL\n                                                        ↑                     │\n                                                        └── fix (error) ←─────┘  at most 3 attempts",
+ "labs": [
+  {
+   "lab": "data.warehouse",
+   "icon": "🏬",
+   "covers": [
+    "data.l01"
+   ],
+   "explain": "The **warehouse**: six tables and their sizes, the schema read with **SQLAlchemy's inspector** (columns, types, foreign keys), and one question answered **by hand**, where the business rule changes the answer by 8%.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.data.m01_text_to_sql",
+     "symbol": "by_hand",
+     "why": "One question, two valid queries.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "data.text-to-sql",
+   "icon": "🗄️",
+   "covers": [
+    "data.l02"
+   ],
+   "explain": "The model needs to know the database to write SQL for it, but every token of schema is paid for on every question. The lab asks six questions three ways: with **column names only**, with **CREATE TABLE statements**, and with **CREATE TABLE plus three sample rows per table**, and checks each query's result against a query we trust. Then it runs one question end to end and shows the SQL next to the answer.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.data.sql",
+     "symbol": "schema_text",
+     "why": "What the model is told about the database.",
+     "notes": [
+      {
+       "match": "part = \" \".join(create.split()) + \";\"",
+       "text": "CREATE TABLE: columns, types and REFERENCES (the joins)."
+      },
+      {
+       "match": "rows = connection.execute(f\"SELECT * FROM {name} LIMIT {sample_rows}\").fetchall()",
+       "text": "Sample rows show what values look like."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.data.sql",
+     "symbol": "engine",
+     "why": "A read-only connection.",
+     "notes": [
+      {
+       "match": "mode=ro",
+       "text": "Even a DROP TABLE that slips through can't change anything."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.data.sql",
+     "symbol": "matches",
+     "why": "Checking a result against the trusted answer.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.data.m01_text_to_sql",
+     "symbol": "text_to_sql_lab",
+     "why": "The lab: three schemas, six questions.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "data.context",
+   "icon": "📖",
+   "covers": [
+    "data.l03"
+   ],
+   "explain": "The 12 evaluation questions with the schema alone, with the **glossary** (definitions and allowed values) and with glossary and **few-shot examples**: which answers the business rules fix.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.data.context",
+     "symbol": "sql_instructions",
+     "why": "Schema, glossary, examples.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "data.guard",
+   "icon": "🛡️",
+   "covers": [
+    "data.l04"
+   ],
+   "explain": "Writes, stacked statements, ATTACH, system tables, personal data (also via SELECT *), a missing LIMIT and a runaway join through the **guard**; a write on the **read-only connection**; and an attack through the question.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.data.guard",
+     "symbol": "check_sql",
+     "why": "The checks.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.data.guard",
+     "symbol": "run_safe",
+     "why": "Read-only, time-limited.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "data.self-correct",
+   "icon": "🔁",
+   "covers": [
+    "data.l05"
+   ],
+   "explain": "A Postgres function in SQLite and a refused personal-data query, each **fed back** to the model until a query runs; every attempt logged.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.data.text_to_sql",
+     "symbol": "TextToSQL",
+     "why": "The loop.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: TextToSQL",
+  "summary": "The product's text-to-SQL: the schema with sample rows, the business glossary and examples, the guard on every query, and up to three attempts with the error fed back. The answer comes with its SQL, and with no working query or no rows the system says so in code instead of asking the model.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "context",
+    "title": "Context",
+    "icon": "📖",
+    "tagline": "The rules the schema can't show",
+    "explain": "GLOSSARY defines revenue, AOV, refund rate and the date range, and lists the allowed values of every categorical column; EXAMPLES show the house style on the tricky rules.",
+    "code": [
+     {
+      "module": "nimbus.data.context",
+      "symbol": "sql_instructions",
+      "why": "The system prompt.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Every misread in production becomes a glossary line or an example, then a question in the eval set."
+    ]
+   },
+   {
+    "id": "guard",
+    "title": "Guard",
+    "icon": "🛡️",
+    "tagline": "Model-written SQL is untrusted",
+    "explain": "check_sql parses with sqlglot (one read statement), allow-lists tables, blocks customer names, adds a LIMIT; run_safe runs it read-only with a 2 s limit.",
+    "code": [
+     {
+      "module": "nimbus.data.guard",
+      "symbol": "check_sql",
+      "why": "The checks.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.data.guard",
+      "symbol": "run_safe",
+      "why": "The run.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "In Postgres the same rules also live in the database: a read-only role, column grants (Data Module 3)."
+    ]
+   },
+   {
+    "id": "ask",
+    "title": "Ask",
+    "icon": "🔁",
+    "tagline": "Write, run, fix, answer",
+    "explain": "TextToSQL.ask writes the query with structured output, runs it through the guard, feeds errors back up to three attempts, and answers from the rows. Empty results and failures are reported in code.",
+    "code": [
+     {
+      "module": "nimbus.data.text_to_sql",
+      "symbol": "TextToSQL",
+      "why": "The system.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Log every attempt: a question that needed three tries points at a missing glossary entry."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "12 business questions",
+    "lab": "data.sql-eval",
+    "explain": "data/eval/sql_questions.json: 12 questions with trusted queries, scored on results, not SQL text, through Lab 2's chain and through TextToSQL.\n\n| | right answers | strict scorer | model calls | tokens | p50 |\n|---|---|---|---|---|---|\n| Lab 2: schema + samples, one try | 7/12 | 6/12 | 1.92 | 896 | 5.1 s |\n| **Production: context + guard + self-correction** | **11/12** | **11/12** | **2.00** | **1,422** | **5.2 s** |\n\nWithout the glossary the model counted refunded and cancelled orders as revenue (₹737,850 for August instead of ₹675,730), read \"delivery\" as `channel = 'app'`, and took \"last month\" as the current date's month, so the query found nothing. With the glossary all four were right, for 1.6× the tokens. The one remaining miss is the scorer's: the query returned weekday '0' and the answer correctly says Sunday. Self-correction never had to fire on these questions; Lab 5 shows it on a dialect error and a refusal.",
+    "code": [
+     {
+      "module": "nimbus.data.evaluation",
+      "symbol": "grade",
+      "why": "Execution accuracy.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Run it on every change to the glossary, the examples or the model."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/data/warehouse.py",
+   "role": "Builds the warehouse (ai-course/.cache/data/nimbus.db), the same data on every machine"
+  },
+  {
+   "path": "src/nimbus/data/sql.py",
+   "role": "Read-only engine, schema text, answer checking"
+  },
+  {
+   "path": "src/nimbus/data/context.py",
+   "role": "The glossary and examples"
+  },
+  {
+   "path": "src/nimbus/data/guard.py",
+   "role": "The SQL guard"
+  },
+  {
+   "path": "src/nimbus/data/text_to_sql.py",
+   "role": "TextToSQL"
+  },
+  {
+   "path": "src/nimbus/data/evaluation.py",
+   "role": "Execution accuracy"
+  },
+  {
+   "path": "data/eval/sql_questions.json",
+   "role": "The questions and trusted queries"
+  },
+  {
+   "path": "src/academy/labs/data/m01_text_to_sql.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Start the academy",
+   "cmd": "uv run academy"
+  }
+ ]
+}

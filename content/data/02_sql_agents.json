@@ -1,0 +1,193 @@
+{
+ "track": "data",
+ "id": "02",
+ "title": "SQL agents & workflows",
+ "summary": "Two ways to go beyond one-shot text to SQL. An **agent** explores the warehouse with tools and queries as often as a question needs. A **workflow** fixes the steps in a LangGraph graph (pick tables, write, run, fix, answer) and lets the model fill each one in. A **data steward** approves queries that read customer data, through an interrupt. Execution accuracy compares all three on the same questions, and the product ships the one the numbers pick.",
+ "learn": [
+  "**A SQL agent**: list_tables, describe_table and run_query (guarded), the glossary in the prompt, assumptions stated",
+  "**A SQL workflow** in LangGraph: pick_tables → write_sql → run ⇄ fix_sql → answer, with retries on a conditional edge",
+  "**Human approval**: a policy in code, interrupt() in the run node, approve / edit / reject",
+  "**Execution accuracy**: compare results, not SQL; strict vs normalized scoring; three systems on one set"
+ ],
+ "flow": "question ─→ pick_tables ─→ write_sql (only those schemas + reference tables in full) ─→ run (guard; customer data → steward) ─┬→ answer\n                                                                                      └─(error, tries left)→ fix_sql ─→ run",
+ "labs": [
+  {
+   "lab": "data.sql-agent",
+   "icon": "🕵️",
+   "covers": [
+    "data.l06"
+   ],
+   "explain": "Three hard questions through **create_agent** with the SQL tools and the glossary: every tool call and query on the page, checked against trusted answers.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.data.agent",
+     "symbol": "build_sql_agent",
+     "why": "The agent.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.data.tools",
+     "symbol": "query_as_text",
+     "why": "Errors come back as text.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "data.sql-workflow",
+   "icon": "🧭",
+   "covers": [
+    "data.l07"
+   ],
+   "explain": "The same questions through the **workflow** (with and without small reference tables in full) and the agent: right answers and **model calls per question**, and the graph itself.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.data.workflow",
+     "symbol": "build_sql_workflow",
+     "why": "The graph.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "data.steward",
+   "icon": "🧑‍⚖️",
+   "covers": [
+    "data.l08"
+   ],
+   "explain": "Four questions through the reviewed workflow: one runs straight through, three read customer data and are **approved**, **edited** and **rejected** by a scripted steward.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.data.workflow",
+     "symbol": "needs_review",
+     "why": "The policy, in code.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "data.sql-systems-eval",
+   "icon": "📏",
+   "covers": [
+    "data.l09"
+   ],
+   "explain": "The 12 evaluation questions plus 3 hard ones through **TextToSQL**, the **workflow** and the **agent**: right answers (normalized and strict), model calls, tokens, latency, and every miss with its SQL.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.data.evaluation",
+     "symbol": "grade",
+     "why": "Execution accuracy.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the SQL workflow, with a steward",
+  "summary": "The product answers SQL questions with the workflow: it sees only the tables a question needs, retries on errors within a bound, reports empty results in code, and pauses queries that read customer data for a data steward. The agent stays available for open-ended exploration, where its extra calls pay for themselves.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "workflow",
+    "title": "Workflow",
+    "icon": "🧭",
+    "tagline": "Fixed steps, the model fills them in",
+    "explain": "build_sql_workflow: pick_tables (structured output), write_sql with only those schemas and small reference tables in full, run through the guard, fix_sql on an error up to three times, answer from the rows.",
+    "code": [
+     {
+      "module": "nimbus.data.workflow",
+      "symbol": "build_sql_workflow",
+      "why": "The graph.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "The number of model calls is known in advance: 3 for most questions, 4 or 5 with a retry."
+    ]
+   },
+   {
+    "id": "steward",
+    "title": "Steward",
+    "icon": "🧑‍⚖️",
+    "tagline": "Customer data waits for a person",
+    "explain": "needs_review sends any query that reads the customers table to a data steward through interrupt(); a checkpointer keeps the paused run, and Command(resume=...) approves, edits or rejects it.",
+    "code": [
+     {
+      "module": "nimbus.data.workflow",
+      "symbol": "needs_review",
+      "why": "The policy.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Use a Postgres checkpointer in production: a review can take days."
+    ]
+   },
+   {
+    "id": "agent",
+    "title": "Agent",
+    "icon": "🕵️",
+    "tagline": "For exploration",
+    "explain": "build_sql_agent explores with list_tables, describe_table and run_query. It's slower and costlier, and it does arithmetic itself, so keep it for open questions where nobody knows the query shape yet.",
+    "code": [
+     {
+      "module": "nimbus.data.agent",
+      "symbol": "build_sql_agent",
+      "why": "The agent.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Module 3's analytics assistant gives the agent governed metrics, so it stops computing rates itself."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "15 questions, three systems",
+    "lab": "data.sql-systems-eval",
+    "explain": "The 12 evaluation questions and 3 hard ones (multi-step and a looked-up fact) through all three systems.\n\n| | right answers (15) | hard questions | model calls | tokens | p50 |\n|---|---|---|---|---|---|\n| TextToSQL (Module 1) | 14/15 | 3/3 | 2.00 | 1,477 | 5.0 s |\n| **Workflow** | **15/15** | **3/3** | **3.00** | **1,226** | **7.8 s** |\n| Agent | 12/15 | 3/3 | 4.67 | 4,454 | 10.3 s |\n\nThe workflow answered everything and used the fewest tokens: pick_tables sends only the tables a question needs, and small reference tables in full. The agent's misses were arithmetic it did itself instead of in SQL: a refund rate worked out from two counts (9.5%, right in words but absent from any query result) and an AOV of ₹2,071 instead of ₹367.07, worked out by the agent from a revenue sum and a row count over order items. TextToSQL's one miss is the weekday the scorer can't read ('0' for Sunday). Strict and normalized scores were equal on this run.",
+    "code": [
+     {
+      "module": "nimbus.data.evaluation",
+      "symbol": "summary",
+      "why": "The scores.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Add every question a user found wrong to data/eval/sql_questions.json, with its trusted query."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/data/tools.py",
+   "role": "list_tables, describe_table, run_query"
+  },
+  {
+   "path": "src/nimbus/data/agent.py",
+   "role": "The SQL agent"
+  },
+  {
+   "path": "src/nimbus/data/workflow.py",
+   "role": "The SQL workflow and the steward policy"
+  },
+  {
+   "path": "src/nimbus/data/evaluation.py",
+   "role": "Execution accuracy"
+  },
+  {
+   "path": "src/academy/labs/data/m02_sql_agents.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Start the academy",
+   "cmd": "uv run academy"
+  }
+ ]
+}

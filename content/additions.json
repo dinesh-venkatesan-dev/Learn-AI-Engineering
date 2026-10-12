@@ -1,0 +1,45 @@
+{
+ "about": "Learning points that are new in this course (not from the old CLI courses). Appended to syllabus.json by scripts/build_syllabus.py; same id scheme, course \"new\".",
+ "lessons": [
+  {
+   "lesson": "new.l01",
+   "part": "new.p1",
+   "title": "Caching in depth: exact, semantic and embedding caches",
+   "points": [
+    "Why cache an LLM app: latency, cost and the provider's rate-limit budget; measured as hit rate, false-hit rate, latency saved and tokens/$ saved.",
+    "Exact-match cache key: a hash of the normalized prompt + model + settings; normalization (case, whitespace, punctuation) raises the hit rate without wrong answers.",
+    "Semantic cache lookup: embed the question, find the nearest cached question, and reuse its answer when the similarity is above a threshold.",
+    "What a semantic cache entry stores: question text, its embedding, the answer, model, prompt version, index version, sources, tenant/scope, created_at, TTL and hit count.",
+    "Choosing the similarity threshold from data: paraphrase pairs (should hit) vs near-miss pairs (must not hit), precision and false hits at each threshold.",
+    "Near-miss protection: an entity guard so numbers, IDs, dates and names in the question must match before a cached answer is reused.",
+    "Storage backends: in-memory, SQLite, PostgreSQL + pgvector and Redis (vector search) run and compared on lookup latency, persistence, TTL support and operating cost.",
+    "Other semantic-cache stores and when to pick them: Valkey, MongoDB Atlas, Elasticsearch/OpenSearch, Cassandra and managed cache services.",
+    "What to cache: FAQ-style answers, retrieval results, embeddings (CacheBackedEmbeddings), reranker scores and slow tool results.",
+    "What never to cache: personalised or permission-dependent answers, time-sensitive data, actions with side effects, errors, refusals and low-confidence answers.",
+    "Invalidation: TTLs, version keys (model, prompt version, index version) so re-ingesting changed documents retires stale answers, and explicit purge on source change.",
+    "Scoping and safety: separate caches per tenant, user group, language and access rights; personal data in cache entries; cache poisoning.",
+    "Provider prompt caching (repeated prompt prefixes billed cheaper) vs response caching: different mechanisms, often used together.",
+    "Caching in production: cache-stampede protection (request coalescing), warm-up with the top questions, size limits and eviction, and hit-rate metrics on a dashboard."
+   ]
+  },
+  {
+   "lesson": "new.l02",
+   "part": "new.p2",
+   "title": "Retrieval metrics in depth: hit, precision, recall, nDCG, MAP, F1 and MRR",
+   "points": [
+    "hit@k (hit rate, success@k): did at least one relevant chunk reach the top k? The \"can the model answer at all\" rate.",
+    "MRR: the mean of 1/rank of the first relevant chunk; rewards putting the answer first.",
+    "precision@k: the share of the k returned chunks that are relevant; the rest is noise that costs tokens and can mislead the model.",
+    "recall@k: the share of ALL relevant chunks in the index that were returned; it matters when an answer is spread over several chunks.",
+    "Counting every relevant chunk in the index: evidence-based labels make the denominator of recall and nDCG computable without hand labelling.",
+    "Answerability: the share of questions where some indexed chunk contains the whole answer; chunking can split an answer so no chunk holds it, even when the file is indexed.",
+    "nDCG@k: relevant chunks score more the higher they rank, divided by the score of the ideal ranking; the standard metric for comparing rankers and rerankers.",
+    "MAP@k: precision measured at each relevant rank, averaged per question and then over questions.",
+    "F1@k: the harmonic mean of precision@k and recall@k, one number for the precision/recall balance.",
+    "The k trade-off: as k grows, hit rate and recall rise while precision falls and context tokens grow; choose k from the curve and the token budget.",
+    "Report several cutoffs (@1, @3, @5), slices by question type and source, and average per question so every question counts equally.",
+    "Which metric for which decision: hit rate and recall for loading, chunking and first-stage retrieval; precision, nDCG and MRR for reranking and choosing k; coverage and answerability for loaders and OCR."
+   ]
+  }
+ ]
+}

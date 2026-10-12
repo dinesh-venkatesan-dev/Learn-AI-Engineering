@@ -1,0 +1,271 @@
+{
+ "track": "agents",
+ "id": "03",
+ "title": "Workflow patterns",
+ "summary": "Module 2 gave you every control-flow tool. This module is about which shape to build: start from the business process (steps, their kind, raw state, an error strategy per kind), then reach for one of five well-known workflow patterns. Prompt chaining with a gate, routing to specialised handlers, parallelisation (sectioning and voting), orchestrator and workers, and evaluator-optimizer. Each runs on a real Nimbus task. The support graph becomes a router whose handlers gather only the facts their kind of ticket needs: order records, a refund decision made in code, or public documents from the RAG system.",
+ "learn": [
+  "**Thinking in LangGraph**: map a process to nodes, name each step's kind, keep raw data in state, choose an error strategy per kind",
+  "**Prompt chaining with a gate**: fixed steps, and plain code that stops a bad run early",
+  "**Routing**: classify into fixed routes; each handler gets its own prompt and only its facts",
+  "**Parallelisation**: sectioning (split, run at once, combine) and voting (majority of judges)",
+  "**Orchestrator and workers**: a model plans the subtasks, Send runs them, a synthesiser joins them",
+  "**Evaluator-optimizer**: write, grade (code first, a model where needed), revise, with a cap"
+ ],
+ "flow": "START ─┬─ triage ─(route by category)─┬─ safety_reply ─────────────────────────────→ END\n       │                               ├─ orders_facts ────┐\n       │                               ├─ refund_facts ────┼→ draft_reply → check_reply ─(ok)→ END\n       │                               └─ knowledge_facts ─┘        ↑______(problems)______┘\n       └─(Send per order id)→ look_up_order ×N        (RAG retriever, public documents only)",
+ "labs": [
+  {
+   "lab": "agents.thinking",
+   "icon": "🧭",
+   "covers": [
+    "lg.l15"
+   ],
+   "explain": "The production support graph **designed before it was coded**: each step's kind (model, data, code, person), what lives in state, what happens when each kind fails. Then drawn and run on three real tickets.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m03_workflows",
+     "symbol": "map_the_process",
+     "why": "The design as data.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m03_workflows",
+     "symbol": "wire_draw_and_run",
+     "why": "Real cases through the graph.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.prompt-chaining",
+   "icon": "⛓️",
+   "covers": [
+    "lg.l16"
+   ],
+   "explain": "A launch email as outline → **gate** → draft → polish, next to one big prompt. A brief with no price stops at the gate after one call.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m03_workflows",
+     "symbol": "chain_with_a_gate",
+     "why": "The chain and its gate.",
+     "notes": [
+      {
+       "match": "bullets = [line for line in state[\"outline\"].splitlines() if line.startswith(\"- \")]",
+       "text": "The gate is plain code: exactly three bullets and the price."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "agents.routing",
+   "icon": "🚦",
+   "covers": [
+    "lg.l17"
+   ],
+   "explain": "Three tickets **classified** into refunds, products or orders, each answered by a handler with its own prompt and facts. The orders handler's fixed facts don't include the order's status, and its reply invents one: the reason v3 looks orders up.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m03_workflows",
+     "symbol": "a_router",
+     "why": "Classify, then route.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.parallelization",
+   "icon": "🧮",
+   "covers": [
+    "lg.l18"
+   ],
+   "explain": "A café review summarised by **three aspect workers at once**, and two replies judged by **three voters** (policy, tone, facts). In this run one judge on each reply disagreed with the majority and was outvoted.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m03_workflows",
+     "symbol": "sectioning",
+     "why": "Sectioning.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m03_workflows",
+     "symbol": "voting",
+     "why": "Voting.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.orchestrator",
+   "icon": "🗂️",
+   "covers": [
+    "lg.l19"
+   ],
+   "explain": "A planner decides the sections of a new-employee briefing; **Send** starts one worker per section, each searching the handbook with the RAG retriever; a synthesiser joins them. The plan is capped at four sections.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m03_workflows",
+     "symbol": "orchestrator_and_workers",
+     "why": "Plan, Send, synthesise.",
+     "notes": [
+      {
+       "match": "return {\"plan\": [s.model_dump() for s in plan.sections[:4]]}",
+       "text": "A cap: a model can't start fifty workers."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "agents.evaluator-optimizer",
+   "icon": "🔁",
+   "covers": [
+    "lg.l20"
+   ],
+   "explain": "A product blurb checked by **code** (length, placeholders) and a **model** (claims the brief doesn't support). A brief asking for 'award-winning' was sent back and fixed on attempt 2; one with no length limit was still too long after 3 attempts (242 → 137 → 112 words) and came back marked 'revise'.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m03_workflows",
+     "symbol": "evaluator_optimizer",
+     "why": "Write, grade, revise, capped.",
+     "notes": [
+      {
+       "match": "return END if state[\"attempts\"] >= max_attempts else \"write\"",
+       "text": "Always cap the loop."
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus support graph v3",
+  "summary": "The support graph routes each ticket to a handler that gathers only the facts its kind needs. Order tickets get the order records. Refund tickets get a refund decision computed in code from the policy (unopened, within 14 days of delivery). Product, café and subscription questions get the top public documents from the RAG retriever. The reply is drafted from those facts alone, and is still checked in code (now also rejecting links, which v3's first drafts invented).",
+  "covers": [],
+  "steps": [
+   {
+    "id": "route",
+    "title": "Route",
+    "icon": "🚦",
+    "tagline": "A handler per kind of ticket",
+    "explain": "`route` sends safety tickets to the approved message and everything else to the handler for its category (`ROUTES`). Unknown categories go to the knowledge handler.",
+    "code": [
+     {
+      "module": "nimbus.support.graph",
+      "symbol": "build_support_graph_v3",
+      "why": "The v3 graph.",
+      "notes": [
+       {
+        "match": "return \"safety_reply\" if category in FIXED_REPLIES else ROUTES.get(category, \"knowledge_facts\")",
+        "text": "Routing by category."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Each new route needs its own evaluation tickets: a route nobody tests is where regressions hide."
+    ]
+   },
+   {
+    "id": "facts",
+    "title": "Facts",
+    "icon": "📚",
+    "tagline": "Facts from code and RAG, not from the model",
+    "explain": "`refund_facts` calls `refund_decision`, which applies the policy in code, so the model is told the decision and never makes it. `knowledge_facts` calls the RAG retriever with `audience=\"public\"`, so customers never see staff-only documents.",
+    "code": [
+     {
+      "module": "nimbus.support.graph",
+      "symbol": "refund_decision",
+      "why": "The refund policy in code.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.support.graph",
+      "symbol": "build_support_graph_v3",
+      "why": "The knowledge handler.",
+      "notes": [
+       {
+        "match": "_, hits = retriever.search(state[\"ticket\"], k=3, audience=\"public\")",
+        "text": "Customers only see public documents."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Decisions with money attached belong in tested code; the model only words them."
+    ]
+   },
+   {
+    "id": "draft",
+    "title": "Draft",
+    "icon": "✍️",
+    "tagline": "Only the facts, no promises",
+    "explain": "The draft prompt carries the handler's facts and one rule added after measuring this module's first runs: offer only the next step, never say something is done or will happen at a certain time.",
+    "code": [
+     {
+      "module": "nimbus.support.graph",
+      "symbol": "build_support_graph_v3",
+      "why": "The draft step.",
+      "notes": [
+       {
+        "match": "given; never say something is done or will happen at a certain time.]",
+        "text": "Added after the evaluation found promised actions ('your order is removed from our system', 'within 24 hours')."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Keep reading the unsupported claims the judge lists: each repeated pattern is a candidate for a code check."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "v3 vs v2, 20 tickets, judged",
+    "lab": "agents.support-v3-eval",
+    "explain": "Both graphs on the 20 labelled tickets. A Groq gpt-oss judge checked every non-safety reply against the same facts: the ticket, the category's policy, the order records, the refund decision and the top public documents.\n\n| | faithfulness | unsupported claims | addresses the ticket | failing code checks | calls / ticket | p50 |\n|---|---|---|---|---|---|---|\n| v2 | 0.57 | 22 | 1.00 | 1 | 2.25 | 3.7 s |\n| **v3** | **0.67** | **14** | 0.94 | 2 | 2.20 | 4.2 s |\n\nv2's replies vary from run to run (16 to 30 unsupported claims across three runs), but v3 had fewer in every run. The difference is in *which* claims: only v2 invented products (a 'Sumatra Mandheling' blend, 'Swiss Water Process' decaf, 1 kg bags in-store). v3's remaining claims are mostly vague promises. v3 costs about 0.5 s more at p50 (the retriever).",
+    "code": [
+     {
+      "module": "academy.labs.agents.m03_workflows",
+      "symbol": "evaluate_v2_vs_v3",
+      "why": "The evaluation.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.quality",
+      "symbol": "judge_models",
+      "why": "Judges, best first: each Groq model has its own daily quota.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Re-run with the same judge after every prompt change; compare the claim lists, not just the totals."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/support/graph.py",
+   "role": "Support graph v1–v3: routing, handlers, refund decision, checks"
+  },
+  {
+   "path": "src/nimbus/rag/quality.py",
+   "role": "The judge (now with a rubric and a list of judge models)"
+  },
+  {
+   "path": "src/academy/labs/agents/m03_workflows.py",
+   "role": "The labs"
+  },
+  {
+   "path": "tests/test_support_graph.py",
+   "role": "Reply checks, links, refund decisions"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Support graph tests",
+   "cmd": "uv run pytest tests/test_support_graph.py"
+  }
+ ]
+}

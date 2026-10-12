@@ -1,0 +1,117 @@
+{
+ "about": "Production Module 2: a replay of support traffic. Requests in the same group have the same right answer; a cached answer reused across groups is a false hit.",
+ "requests": [
+  {
+   "group": "cold_brew_price",
+   "question": "How much is a cold brew?"
+  },
+  {
+   "group": "oat_latte_vegan",
+   "question": "Is the Oat Latte vegan?"
+  },
+  {
+   "group": "points_expiry",
+   "question": "When do loyalty points expire?"
+  },
+  {
+   "group": "mumbai_delivery",
+   "question": "How long does delivery to Mumbai take?"
+  },
+  {
+   "group": "refund_window",
+   "question": "How long do I have to return a bag?"
+  },
+  {
+   "group": "cold_brew_price",
+   "question": "What does a cold brew cost?"
+  },
+  {
+   "group": "cold_brew_price",
+   "question": "How much is a cold brew?"
+  },
+  {
+   "group": "cappuccino_price",
+   "question": "How much is a cappuccino?"
+  },
+  {
+   "group": "oat_latte_vegan",
+   "question": "Does the oat latte have any dairy in it?"
+  },
+  {
+   "group": "points_expiry",
+   "question": "Do Nimbus points expire?"
+  },
+  {
+   "group": "pune_delivery",
+   "question": "How long does delivery to Pune take?"
+  },
+  {
+   "group": "refund_10_days",
+   "question": "Can I get a refund after 10 days?"
+  },
+  {
+   "group": "refund_20_days",
+   "question": "Can I get a refund after 20 days?"
+  },
+  {
+   "group": "cold_brew_price",
+   "question": "cold brew price?"
+  },
+  {
+   "group": "points_500",
+   "question": "How many points do I get for ₹500?"
+  },
+  {
+   "group": "points_1300",
+   "question": "How many points do I get for ₹1,300?"
+  },
+  {
+   "group": "mocha_vegan",
+   "question": "Is the Mocha vegan?"
+  },
+  {
+   "group": "order_nc1002",
+   "question": "Can I cancel order NC-1002?"
+  },
+  {
+   "group": "order_nc1003",
+   "question": "Can I cancel order NC-1003?"
+  },
+  {
+   "group": "mumbai_delivery",
+   "question": "Delivery time for Mumbai?"
+  },
+  {
+   "group": "refund_window",
+   "question": "What's your refund window?"
+  },
+  {
+   "group": "cold_brew_price",
+   "question": "how much is a cold brew"
+  },
+  {
+   "group": "oat_latte_vegan",
+   "question": "is the oat latte vegan"
+  },
+  {
+   "group": "points_expiry",
+   "question": "How long do my points last?"
+  },
+  {
+   "group": "cappuccino_price",
+   "question": "What does a cappuccino cost?"
+  },
+  {
+   "group": "refund_window",
+   "question": "What's your refund window?"
+  },
+  {
+   "group": "cold_brew_price",
+   "question": "How much is a cold brew?"
+  },
+  {
+   "group": "points_500",
+   "question": "How many points do I get for ₹500?"
+  }
+ ]
+}

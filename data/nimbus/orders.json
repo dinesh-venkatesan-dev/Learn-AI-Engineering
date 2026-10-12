@@ -1,0 +1,45 @@
+[
+  {
+    "order_id": "NC-1001",
+    "customer": "Priya S.",
+    "items": [
+      "Nilgiri Sunrise"
+    ],
+    "total": 720,
+    "status": "delivered",
+    "date": "2026-03-02"
+  },
+  {
+    "order_id": "NC-1002",
+    "customer": "Arjun M.",
+    "items": [
+      "Monsoon Malabar Reserve",
+      "Chikmagalur Classic"
+    ],
+    "total": 1210,
+    "status": "shipped",
+    "date": "2026-03-05"
+  },
+  {
+    "order_id": "NC-1003",
+    "customer": "Meena K.",
+    "items": [
+      "Chikmagalur Classic"
+    ],
+    "total": 560,
+    "status": "cancelled",
+    "date": "2026-03-06"
+  },
+  {
+    "order_id": "NC-1004",
+    "customer": "Ravi T.",
+    "items": [
+      "Monsoon Malabar Reserve",
+      "Nilgiri Sunrise",
+      "Chikmagalur Classic"
+    ],
+    "total": 1930,
+    "status": "processing",
+    "date": "2026-03-09"
+  }
+]

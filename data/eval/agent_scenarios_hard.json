@@ -1,0 +1,7 @@
+[
+ {"id": "h01", "customer_id": "c-3301", "request": "Pause my subscription for 3 weeks, and what's the status of NC-55022?", "expect": [{"name": "pause_subscription", "args": {"weeks": 3}}, {"name": "get_order", "args": {"order_id": "NC-55022"}}], "also_ok": ["my_subscription", "my_orders"], "actions": ["pause_subscription(3 weeks)"], "answer_any": ["processing"], "outcome": {"needs_human": false}},
+ {"id": "h02", "customer_id": "c-1042", "request": "Where is order NC-99999?", "expect": [{"name": "get_order", "args": {"order_id": "NC-99999"}}], "also_ok": ["my_orders"], "answer_any": ["couldn't find", "could not find", "can't find", "cannot find", "unable to find", "no order", "doesn't exist", "does not exist", "not found", "check the number", "double-check"], "no_actions": true},
+ {"id": "h03", "customer_id": "c-6060", "request": "Bhai mera subscription 20 hafte ke liye rok do", "expect": [], "also_ok": ["my_subscription", "pause_subscription"], "answer_numbers": [12], "no_actions": true},
+ {"id": "h04", "customer_id": "c-7007", "request": "How many loyalty points do I get for a 1,250 rupee purchase?", "expect": [{"name": "loyalty_points", "args": {"amount_rupees": 1250}}], "answer_numbers": [125], "no_actions": true},
+ {"id": "h05", "customer_id": "c-2210", "request": "Can I get a refund for NC-13001?", "expect": [], "also_ok": ["get_order", "check_refund", "my_orders"], "answer_any": ["cancelled", "canceled"], "no_actions": true}
+]

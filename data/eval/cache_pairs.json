@@ -1,0 +1,95 @@
+{
+ "about": "Production Module 2: question pairs for choosing a semantic cache's similarity threshold. should_hit: the same question in other words (reuse the answer). must_not: near-misses whose answers differ.",
+ "pairs": [
+  {
+   "kind": "should_hit",
+   "a": "How much is a cold brew?",
+   "b": "What does a cold brew cost?"
+  },
+  {
+   "kind": "should_hit",
+   "a": "How much is a cold brew?",
+   "b": "cold brew price?"
+  },
+  {
+   "kind": "should_hit",
+   "a": "Is the Oat Latte vegan?",
+   "b": "Does the oat latte have any dairy in it?"
+  },
+  {
+   "kind": "should_hit",
+   "a": "When do loyalty points expire?",
+   "b": "Do Nimbus points expire?"
+  },
+  {
+   "kind": "should_hit",
+   "a": "When do loyalty points expire?",
+   "b": "How long do my points last?"
+  },
+  {
+   "kind": "should_hit",
+   "a": "How long does delivery to Mumbai take?",
+   "b": "Delivery time for Mumbai?"
+  },
+  {
+   "kind": "should_hit",
+   "a": "How long do I have to return a bag?",
+   "b": "What's your refund window?"
+  },
+  {
+   "kind": "should_hit",
+   "a": "Do you have decaf?",
+   "b": "Is there a decaffeinated option?"
+  },
+  {
+   "kind": "should_hit",
+   "a": "What are your opening hours?",
+   "b": "When are the cafés open?"
+  },
+  {
+   "kind": "should_hit",
+   "a": "Can I pay with UPI?",
+   "b": "Do you accept UPI payments?"
+  },
+  {
+   "kind": "must_not",
+   "a": "How much is a cold brew?",
+   "b": "How much is a cappuccino?"
+  },
+  {
+   "kind": "must_not",
+   "a": "How long does delivery to Mumbai take?",
+   "b": "How long does delivery to Pune take?"
+  },
+  {
+   "kind": "must_not",
+   "a": "Can I get a refund after 10 days?",
+   "b": "Can I get a refund after 20 days?"
+  },
+  {
+   "kind": "must_not",
+   "a": "How many points do I get for ₹500?",
+   "b": "How many points do I get for ₹1,300?"
+  },
+  {
+   "kind": "must_not",
+   "a": "Can I cancel order NC-1002?",
+   "b": "Can I cancel order NC-1003?"
+  },
+  {
+   "kind": "must_not",
+   "a": "Is the Oat Latte vegan?",
+   "b": "Is the Mocha vegan?"
+  },
+  {
+   "kind": "must_not",
+   "a": "Do you deliver to Chennai?",
+   "b": "Do you deliver to Kolkata?"
+  },
+  {
+   "kind": "must_not",
+   "a": "Is the Bandra café open on Sunday?",
+   "b": "Is the Colaba café open on Sunday?"
+  }
+ ]
+}

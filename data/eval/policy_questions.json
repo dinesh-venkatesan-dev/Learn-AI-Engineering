@@ -1,0 +1,10 @@
+[
+ {"id": "p1", "request": "My bag arrived damaged. What should I do?", "expect": [], "also_ok": ["get_order", "cafe_menu_item", "check_refund", "loyalty_points", "escalate_to_human"], "answer_all": ["photo"], "answer_any": ["3 days", "three days"]},
+ {"id": "p2", "request": "Can I still cancel an order that has already been packed?", "expect": [], "also_ok": ["get_order", "cafe_menu_item", "check_refund", "loyalty_points", "escalate_to_human"], "answer_any": ["return"]},
+ {"id": "p3", "request": "How long does a refund take to reach my card?", "expect": [], "also_ok": ["get_order", "cafe_menu_item", "check_refund", "loyalty_points", "escalate_to_human"], "answer_any": ["5 to 7", "5-7", "5–7", "five to seven"]},
+ {"id": "p4", "request": "I didn't like the latte I bought at your café. Can I get my money back?", "expect": [], "also_ok": ["get_order", "cafe_menu_item", "check_refund", "loyalty_points", "escalate_to_human"], "answer_any": ["remake"]},
+ {"id": "p5", "request": "Where do I send photos of a damaged delivery?", "expect": [], "also_ok": ["get_order", "cafe_menu_item", "check_refund", "loyalty_points", "escalate_to_human"], "answer_any": ["orders@nimbus.example"]},
+ {"id": "p6", "request": "Can I cancel order NC-55022?", "expect": [{"name": "get_order", "args": {"order_id": "NC-55022"}}], "also_ok": ["get_order", "cafe_menu_item", "check_refund", "loyalty_points", "escalate_to_human"], "answer_any": ["free of charge", "free", "can be cancelled", "can cancel", "can still cancel"]},
+ {"id": "p7", "request": "Are café drinks refundable?", "expect": [], "also_ok": ["get_order", "cafe_menu_item", "check_refund", "loyalty_points", "escalate_to_human"], "answer_any": ["not refundable", "aren't refundable", "non-refundable", "remake"]},
+ {"id": "p8", "request": "My order NC-12093 arrived with a torn bag. What now?", "expect": [], "also_ok": ["get_order", "cafe_menu_item", "check_refund", "loyalty_points", "escalate_to_human"], "answer_all": ["photo"]}
+]

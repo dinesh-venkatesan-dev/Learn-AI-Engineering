@@ -1,0 +1,9 @@
+item,category,price_rupees,vegan
+Filter Coffee,hot,120,no
+Cappuccino,hot,180,no
+Oat Latte,hot,220,yes
+Cold Brew,cold,200,yes
+Mango Frappe,cold,240,no
+Masala Chai,hot,100,no
+Banana Bread,food,150,no
+Vegan Brownie,food,170,yes

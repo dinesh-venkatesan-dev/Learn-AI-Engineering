@@ -1,0 +1,318 @@
+{
+ "track": "langchain",
+ "id": "03",
+ "title": "Tools",
+ "summary": "Giving a model **tools**: how a Python function becomes something a model can call, what tools return and what the model actually sees, **prebuilt toolkits** (files, web search, SQL) kept in bounds, and **the tool-calling loop** every agent runs, written by hand. The production path gives Nimbus support five tools and proves them on 12 labelled requests, including a real bug the scorecard found and how it was fixed.",
+ "learn": [
+  "**@tool and args_schema**: the schema the model reads, custom names, calling tools yourself, errors and ToolRuntime",
+  "**Tool outputs**: ToolMessages, content_and_artifact, images, return_direct, reserved names",
+  "**Prebuilt toolkits**: files, DuckDuckGo search and SQL, sandboxed and read-only",
+  "**The tool loop by hand**: bind_tools, tool_calls, ToolMessages, parallel and multi-round calls",
+  "**Tool design measured**: when wording fails, change the tool"
+ ],
+ "flow": "question → model.bind_tools(tools) → AIMessage.tool_calls  ──(your code runs each tool)──▶  ToolMessages\n         ↑                                                                                        │\n         └──────────────────────────── until the model answers without tool calls ◀──────────────┘\n   return_direct tool → its output is the answer · max_rounds → stop · every call scored on 12 labelled requests",
+ "labs": [
+  {
+   "lab": "lc.tool-definitions",
+   "icon": "🛠️",
+   "covers": [
+    "lc.l17"
+   ],
+   "explain": "A tool is a Python function plus a **schema** the model reads: `@tool` takes the name from the function, the description from the docstring and the arguments from the type hints. A Pydantic **`args_schema`** describes each argument precisely (and validates it), and you can give a tool a **custom name and description**. You can **call a tool yourself** (with an args dict, or with a ToolCall to get a ToolMessage), turn failures into messages with **ToolException + handle_tool_error**, and give a tool a hidden **ToolRuntime** argument. This lab makes no model calls: tools are plain code.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.tools",
+     "symbol": "build_tools",
+     "why": "The Nimbus support tools.",
+     "notes": [
+      {
+       "match": "@tool(args_schema=OrderId, response_format=\"content_and_artifact\")",
+       "text": "A validated argument, and a summary for the model with the full record kept for the app."
+      },
+      {
+       "match": "raise ToolException(f\"No order {order_id}. Ask the customer to check the number",
+       "text": "A failure the model can act on: it asks the customer, instead of the conversation crashing."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.tool-outputs",
+   "icon": "📤",
+   "covers": [
+    "lc.l18"
+   ],
+   "explain": "Whatever a tool returns, the model receives a **ToolMessage**: text, or an object serialised to JSON. **`content_and_artifact`** sends a short summary to the model and keeps the full record for your app. Tools can **return images**. **`return_direct=True`** makes the tool's output the final answer, with no extra model call. And two **reserved argument names**: `runtime` is injected and hidden; `config` must never be used (the model is told about it, but your function never gets it).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.tools",
+     "symbol": "build_tools",
+     "why": "Output choices in the production tools.",
+     "notes": [
+      {
+       "match": "return summary, order  # the model reads the summary; the app keeps the full record",
+       "text": "content_and_artifact: ~90 characters for the model instead of the whole record."
+      },
+      {
+       "match": "@tool(args_schema=Escalation, return_direct=True)",
+       "text": "Escalation ends the conversation with approved wording: no model call after it."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.prebuilt-tools",
+   "icon": "🧰",
+   "covers": [
+    "lc.l19"
+   ],
+   "explain": "LangChain ships ready-made tools. A **toolkit** is a bundle (pick only what you need). The lab gives a model **file tools** confined to one folder, **DuckDuckGo web search** (no API key), and **SQL tools** that explore a database and write their own queries, then checks the SQL answer against the data and shows the **limits** working: a sandbox folder and a read-only database.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m03_tools",
+     "symbol": "query_a_database",
+     "why": "SQL tools on a read-only copy of the support orders.",
+     "notes": [
+      {
+       "match": "engine = create_engine(f\"sqlite:///file:{SUPPORT_DB}?mode=ro&uri=true\")",
+       "text": "Read-only at the connection: whatever SQL the model writes, it can't change data."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.tool-loop",
+   "icon": "🔁",
+   "covers": [
+    "lc.l20"
+   ],
+   "explain": "What every agent does, written by hand. The model sees each tool as a **name, description and JSON schema**. **`bind_tools()`** lets it *ask* for a tool (`tool_calls`), but it never runs one: your code does, appends a **ToolMessage**, and asks again, **until the reply has no tool calls**. Independent lookups come back as **parallel calls** in one turn; a call that needs another call's result takes **another round**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.assistant",
+     "symbol": "answer_with_tools",
+     "why": "The production loop.",
+     "notes": [
+      {
+       "match": "bound = model.bind_tools(tools)",
+       "text": "The model now knows the tools' schemas; it still never runs them."
+      },
+      {
+       "match": "result = tool.invoke(call)",
+       "text": "A ToolCall in, a ToolMessage out (with the artifact, if any)."
+      },
+      {
+       "match": "if tool is not None and tool.return_direct:",
+       "text": "A return_direct tool ends the loop: its output is the answer."
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus support tools",
+  "summary": "Support gets five tools over the order system, the refund policy, the café menu, loyalty points and escalation, a hand-written tool loop with limits, and a 12-request scorecard: the right tools, with the right arguments, and a correct answer.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "tools",
+    "title": "The tools",
+    "icon": "🛠️",
+    "tagline": "Five tools, written for the model",
+    "explain": "Support can now **look things up and act**: `get_order`, `check_refund` (the 14-day, unopened-bags policy), `cafe_menu_item`, `loyalty_points` and `escalate_to_human`. They read from a support order system (12 orders with a fixed \"today\", so policy answers are reproducible). Arguments are validated by Pydantic schemas, and every failure, including arguments that break the schema, comes back to the model as a message it can act on.",
+    "code": [
+     {
+      "module": "nimbus.support.tools",
+      "symbol": "build_tools",
+      "why": "Every support tool.",
+      "notes": [
+       {
+        "match": "def check_refund(order_id: str, opened: bool) -> str:",
+        "text": "Policy in code, not in the prompt: the model can't talk its way into a refund."
+       },
+       {
+        "match": "t.handle_validation_error = explain_bad_arguments",
+        "text": "Bad arguments come back as \"order_id: String should match pattern...\", so the model can fix the call."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.tools",
+      "symbol": "explain_bad_arguments",
+      "why": "What the model sees when its arguments are wrong.",
+      "notes": [
+       {
+        "match": "return \"Invalid arguments: \" + \"; \".join(",
+        "text": "The field and the rule, instead of LangChain's generic 'Tool input validation error'."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Tools act with your permissions: read-only by default, and every action tool (refund, pause) should go through policy checks in code, never just the prompt.",
+     "Keep tool results short: everything you return is input tokens on the next model call."
+    ]
+   },
+   {
+    "id": "design",
+    "title": "Tool design",
+    "icon": "📐",
+    "tagline": "Fix behaviour in the tool, not in the wording",
+    "explain": "The scorecard caught a real bug. Asked for an order's status **and** its loyalty points, the model called `get_order` and `loyalty_points` **in the same turn**, guessing the amount (₹390, ₹1,250, ₹0) instead of waiting for the order total. A clearer description (\"call get_order first, never guess\") **didn't fix it**. Redesigning the tool did: `loyalty_points` now takes the **order id** and looks the total up itself, so nothing has to be chained. All 12 requests now use the right tools with the right arguments.",
+    "code": [
+     {
+      "module": "nimbus.support.tools",
+      "symbol": "build_tools",
+      "why": "The redesigned loyalty tool.",
+      "notes": [
+       {
+        "match": "def points_for(order_id: str | None = None, amount_rupees: int | None = None) -> str:",
+        "text": "Takes what the model already has (the order id), not a value it would have to look up first."
+       },
+       {
+        "match": "# scorecard the model called this in parallel with get_order and guessed the amount",
+        "text": "The reason, kept next to the code."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "When a model must pass one tool's output into another, expect it to sometimes guess. Prefer tools that accept identifiers and look things up themselves.",
+     "Test dependent requests explicitly: they are where tool use breaks first."
+    ]
+   },
+   {
+    "id": "loop",
+    "title": "The loop",
+    "icon": "🔁",
+    "tagline": "Model → tools → model, with limits",
+    "explain": "`answer_with_tools()` runs the conversation: the model asks for tools, the loop runs each one and appends the ToolMessage, and repeats until the model answers. A `return_direct` tool ends it immediately, and `max_rounds` stops a model that keeps calling tools. Module 4 replaces this hand-written loop with `create_agent`.",
+    "code": [
+     {
+      "module": "nimbus.support.assistant",
+      "symbol": "answer_with_tools",
+      "why": "The hand-written tool loop.",
+      "notes": [
+       {
+        "match": "for round_ in range(1, max_rounds + 1):",
+        "text": "A hard limit: a confused model can't loop (and spend) forever."
+       },
+       {
+        "match": "result = ToolMessage(f\"Unknown tool {call['name']}.\", tool_call_id=call[\"id\"], status=\"error\")",
+        "text": "A tool the model invented gets an error message, not a crash."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Log every tool call with its arguments and result (the artifacts are perfect for this): it's the audit trail of what the assistant did.",
+     "Set max_rounds from data: these requests need 1.8 model calls on average; a request needing 5 is a problem to look at."
+    ]
+   },
+   {
+    "id": "try",
+    "title": "Try it",
+    "icon": "▶",
+    "tagline": "One request, every message",
+    "lab": "lc.tools-one",
+    "explain": "Run any labelled request (it's scored against its label) or type your own, and see the whole conversation: what the model asked for, what each tool returned, the artifacts kept, and the answer.",
+    "code": [
+     {
+      "module": "academy.labs.langchain.m03_tools",
+      "symbol": "tools_one",
+      "why": "The lab.",
+      "notes": [
+       {
+        "match": "run = answer_with_tools(get_chat_model(), _tools(), text)",
+        "text": "The production loop and tools, unchanged."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Show support agents this trace next to the answer: they trust (and correct) what they can see."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "Right tool, right arguments, right answer",
+    "lab": "lc.tools-eval",
+    "explain": "12 labelled requests: single lookups, refunds inside and outside the 14-day window, an opened bag, a missing order, two lookups in one message, a lookup plus points, a safety escalation, and a question no tool covers. Each is scored on **right tools**, **right arguments**, **answer correctness** (required phrases and whole numbers: 209 points must not match ₹2090), model calls, tokens and cost. The same tools **without descriptions** run as a baseline.\n\nMeasured (Mistral ministral-14b):\n\n| toolset | success | right tools · args | tokens / request |\n|---|---|---|---|\n| first version | 0.83–0.92 | 0.92 · 0.96 | ~1,250 |\n| **redesigned loyalty tool** | **1.00** | **1.00 · 1.00** | 1,343 |\n| same, without descriptions | 1.00 | 1.00 · 1.00 | 907 |\n\nOn this set the descriptions don't change accuracy and cost 436 tokens per request. Production keeps the ones that carry rules this set doesn't test yet (\"check before promising a refund\", when to escalate); extending the set to cover them is the next step.",
+    "code": [
+     {
+      "module": "nimbus.support.tool_eval",
+      "symbol": "score",
+      "why": "How one request is scored.",
+      "notes": [
+       {
+        "match": "tools_ok = len(made) == len(expected) and not stray",
+        "text": "Every expected call made, and no tool the request didn't need."
+       },
+       {
+        "match": "numbers = {int(n) for n in re.findall(r\"\\d+\", answer.replace(\",\", \"\"))}",
+        "text": "Whole numbers: '209' must not match inside '2090'."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.tool_eval",
+      "symbol": "terse",
+      "why": "The baseline: the same tools without descriptions.",
+      "notes": [
+       {
+        "match": "description=t.name.replace(\"_\", \" \"),",
+        "text": "Just the name: what descriptions add is exactly the difference."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Add every request the assistant got wrong in production to the labelled set: the set should grow from real failures.",
+     "Run it on every change to tools, prompts or model, and compare against the history."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/support/tools.py",
+   "role": "SupportStore and the five tools"
+  },
+  {
+   "path": "src/nimbus/support/assistant.py",
+   "role": "answer_with_tools(): the tool loop by hand"
+  },
+  {
+   "path": "src/nimbus/support/tool_eval.py",
+   "role": "The tool-use scorecard, and the terse baseline"
+  },
+  {
+   "path": "data/support/orders.json",
+   "role": "12 orders with a fixed 'today'"
+  },
+  {
+   "path": "data/eval/tool_requests.json",
+   "role": "12 labelled requests"
+  },
+  {
+   "path": "src/academy/labs/langchain/m03_tools.py",
+   "role": "The labs on this page"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Run the tests",
+   "cmd": "uv run pytest"
+  },
+  {
+   "label": "The course app",
+   "cmd": "uv run academy"
+  }
+ ]
+}

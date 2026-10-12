@@ -1,0 +1,320 @@
+{
+ "track": "langchain",
+ "id": "04",
+ "title": "Agents with create_agent",
+ "summary": "From a hand-written loop to an **agent**: `create_agent` and the graph it builds, agents that end with **typed data**, keeping **long conversations** affordable, and giving an agent **runtime context** and **custom state**. The production path builds **Nimbus support agent v1**: customer-aware tools, an audit trail of actions, a validated outcome, memory, and a 10-scenario scorecard that chose the output strategy.",
+ "learn": [
+  "**create_agent**: the model/tools graph, state in and out, every step in the result",
+  "**response_format**: structured responses, how they work, automatic retries and handle_errors",
+  "**Long conversations**: trim_messages, SummarizationMiddleware, RemoveMessage and REMOVE_ALL_MESSAGES, measured",
+  "**Runtime context and custom state**: ToolRuntime, request.runtime, Command updates and reducers"
+ ],
+ "flow": "invoke({messages}, context=Customer)  →  [model node] ⇄ [tools node]   tools read the customer from ToolRuntime,\n                                                                    actions land in state via Command(update)\n                                      →  SupportOutcome (validated)   ·   checkpointer + summarisation per conversation",
+ "labs": [
+  {
+   "lab": "lc.create-agent",
+   "icon": "🤖",
+   "covers": [
+    "lc.l21"
+   ],
+   "explain": "`create_agent(model, tools, system_prompt)` builds the tool loop from Module 3 for you, as a **LangGraph graph**: a *model* node and a *tools* node that loop until the model answers without tool calls. You `invoke` it with state (`{\"messages\": [...]}`) and get state back, with **every step** of the loop in the messages. The lab runs the same question through `create_agent` and through the loop you wrote, side by side.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m04_agents",
+     "symbol": "create_agent_lab",
+     "why": "The lab: agent vs the hand-written loop.",
+     "notes": [
+      {
+       "match": "result = invoke_with_state(agent)",
+       "text": "The agent's whole run comes back as state."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.agent-structured",
+   "icon": "🧾",
+   "covers": [
+    "lc.l24"
+   ],
+   "explain": "An agent can end with **typed data** instead of text: `response_format` makes it use its tools and then return a validated object, found in `result[\"structured_response\"]`. With ToolStrategy the schema is offered as **one more tool**, and calling it ends the run. When the model's output breaks the schema, the error goes back to the model so it can **fix it** automatically, or you write the retry message yourself, or turn retries off (`handle_errors`).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m04_agents",
+     "symbol": "agent_structured",
+     "why": "The lab.",
+     "notes": [
+      {
+       "match": "feedback, fixed = let_it_fix_bad_output(model)",
+       "text": "A rating of 10 breaks the 1–5 rule: watch the agent correct itself."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.agent-long-chats",
+   "icon": "🧠",
+   "covers": [
+    "lc.l26"
+   ],
+   "explain": "With memory (a checkpointer per conversation) the history **grows every turn**, and every turn pays for all of it. The lab has a 6-turn conversation, then compares three ways to handle it: keep **everything**, **trim_messages** (keep the last few: cheap, forgets), and **SummarizationMiddleware** (old messages become a summary: keeps the gist). It also deletes specific messages for good with **RemoveMessage** (\"forget that\") and clears a conversation with **REMOVE_ALL_MESSAGES**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m04_agents",
+     "symbol": "agent_long_chats",
+     "why": "The lab: three strategies, measured.",
+     "notes": [
+      {
+       "match": "s_agent, s_config, kept = summarise_old_messages(model)",
+       "text": "After six turns the first message in state is a summary."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.agent-context-state",
+   "icon": "🧩",
+   "covers": [
+    "lc.l29"
+   ],
+   "explain": "Two ways to give an agent extra data. **Runtime context** (`context_schema`) is read-only per call: who is asking, their language, their plan. Tools read it via **ToolRuntime**, middleware via `request.runtime`, and the model can't see or change it. **Custom state** (`state_schema`) is what the agent keeps and updates during a run: a tool writes to it by returning **`Command(update=...)`**, and a **reducer** decides how parallel updates combine.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m04_agents",
+     "symbol": "agent_context_state",
+     "why": "The lab.",
+     "notes": [
+      {
+       "match": "priya, meena = same_agent_different_customers(model, store)",
+       "text": "Same agent, same question: each customer sees only their own orders."
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus support agent v1",
+  "summary": "The Module 3 loop becomes a real agent: it knows which customer it's serving (context the model can't change), records every action it takes (state), ends with a validated routing decision (structured output), and remembers conversations without letting them grow forever. A 10-scenario scorecard caught a tool-ordering bug and chose the output strategy.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "agent",
+    "title": "The agent",
+    "icon": "🤖",
+    "tagline": "create_agent with everything it needs",
+    "explain": "Support agent v1 is one `create_agent` call: the Module 3 lookup tools plus customer-aware tools, a prompt built per customer, a validated `SupportOutcome`, the customer as runtime context, an `actions` field in state, summarisation for long chats, and an optional checkpointer for conversations.",
+    "code": [
+     {
+      "module": "nimbus.support.agent",
+      "symbol": "build_support_agent",
+      "why": "The whole agent.",
+      "notes": [
+       {
+        "match": "strategy = {\"provider\": ProviderStrategy(SupportOutcome), \"tool\": ToolStrategy(SupportOutcome), \"text\": None}[output]",
+        "text": "How the outcome is requested: chosen by the scorecard."
+       },
+       {
+        "match": "context_schema=CustomerContext,",
+        "text": "Who is asking: supplied by the app on every call."
+       },
+       {
+        "match": "state_schema=SupportState,",
+        "text": "messages + actions: the audit trail of what the agent did."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Create the agent once and reuse it: per-request data goes in `context=` and the thread id, not in the agent."
+    ]
+   },
+   {
+    "id": "context",
+    "title": "Customer context",
+    "icon": "🪪",
+    "tagline": "The model can't ask for someone else's orders",
+    "explain": "The app passes the logged-in customer as **runtime context**. `my_orders` and the subscription tools read the customer id from `ToolRuntime`, never from the model's arguments, so no prompt can make the agent read another customer's data. The system prompt is built per call from the same context.",
+    "code": [
+     {
+      "module": "nimbus.support.agent",
+      "symbol": "context_tools",
+      "why": "Tools that act for the current customer.",
+      "notes": [
+       {
+        "match": "orders = list(reversed(store.orders_of(runtime.context.customer_id)))",
+        "text": "The customer comes from the context; and newest first (see the scorecard)."
+       },
+       {
+        "match": "sub[\"paused_until\"] = (store.today + timedelta(weeks=weeks)).isoformat()",
+        "text": "An action, limited to the customer's own subscription."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.agent",
+      "symbol": "support_prompt",
+      "why": "The prompt, built per call.",
+      "notes": [
+       {
+        "match": "customer = request.runtime.context",
+        "text": "Middleware reads the same context."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Never put the customer id in a tool argument the model fills: take it from the authenticated session, through context.",
+     "The scorecard caught `my_orders` listed oldest first: asked for the \"latest order\", the model took the first line. It now returns newest first, and says so."
+    ]
+   },
+   {
+    "id": "state",
+    "title": "State and outcome",
+    "icon": "🧾",
+    "tagline": "What the agent did, and what it decided",
+    "explain": "Action tools (pause, escalate) record what they did in `state[\"actions\"]` with `Command(update=...)`; the reducer concatenates updates from parallel calls. The run ends with a **SupportOutcome**: the reply plus `resolved`, `needs_human` and the order ids, which the support desk routes on.",
+    "code": [
+     {
+      "module": "nimbus.support.agent",
+      "symbol": "SupportState",
+      "why": "Extra state, with a reducer.",
+      "notes": [
+       {
+        "match": "actions: Annotated[list[str], operator.add]",
+        "text": "Parallel tool calls append; nothing is overwritten."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.agent",
+      "symbol": "SupportOutcome",
+      "why": "The validated final answer.",
+      "notes": [
+       {
+        "match": "needs_human: bool = Field(",
+        "text": "The field a human queue is built on."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Persist `actions` with the conversation: it's the audit trail support leads and customers ask for.",
+     "Route on `needs_human` and `resolved`, never on the wording of the reply."
+    ]
+   },
+   {
+    "id": "memory",
+    "title": "Memory",
+    "icon": "🧠",
+    "tagline": "Conversations that stay affordable",
+    "explain": "With a checkpointer, each `thread_id` is a conversation the agent remembers. SummarizationMiddleware keeps it affordable: once the history passes 4,000 tokens, older turns become one summary and the last 6 messages stay as they are. (Durable checkpointers in PostgreSQL come in Agents Module 5.)",
+    "code": [
+     {
+      "module": "nimbus.support.agent",
+      "symbol": "build_support_agent",
+      "why": "Summarisation in the middleware list.",
+      "notes": [
+       {
+        "match": "SummarizationMiddleware(model=model, trigger=(\"tokens\", summarize_after_tokens), keep=(\"messages\", 6))",
+        "text": "Summarise past 4,000 tokens; keep the latest 6 messages verbatim."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Honour \"forget that\" with RemoveMessage, and delete whole conversations on request (REMOVE_ALL_MESSAGES).",
+     "In-memory checkpoints vanish on restart: use a database checkpointer for real conversations."
+    ]
+   },
+   {
+    "id": "try",
+    "title": "Try it",
+    "icon": "▶",
+    "tagline": "One customer, one request",
+    "lab": "lc.agent-one",
+    "explain": "Run any labelled scenario: the customer's conversation, the SupportOutcome, the actions in state, and the checks against the label.",
+    "code": [
+     {
+      "module": "nimbus.support.agent_eval",
+      "symbol": "run_scenario",
+      "why": "How a scenario runs.",
+      "notes": [
+       {
+        "match": "store = SupportStore()  # a fresh store per scenario",
+        "text": "Actions (a paused subscription) never leak between scenarios."
+       },
+       {
+        "match": "result = agent.invoke({\"messages\": [HumanMessage(scenario[\"request\"])], \"actions\": []}, context=context)",
+        "text": "The customer goes in as context."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Show support agents the actions next to the reply: an action they didn't expect is the first thing to review."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "Tools, actions, outcome and reply",
+    "lab": "lc.agent-eval",
+    "explain": "10 labelled scenarios, each a **customer** (the runtime context) and a request: orders found through the customer's own history, subscription pauses (and a customer with no subscription), refunds inside and outside the window, a mouldy opened bag (check, then escalate), insects (urgent escalation). Each is scored on **tools** (right calls, nothing unnecessary), **actions** (what landed in state), **outcome** (needs_human, resolved, order ids), and the **reply** (required facts), plus model calls, tokens and cost.\n\nMeasured, after fixing what the first run found (Mistral ministral-14b):\n\n| output strategy | success | tools | outcome | model calls | tokens | $ / 1k |\n|---|---|---|---|---|---|---|\n| **ToolStrategy** | **1.00** | 1.00 | 1.00 | 2.7 | 2,973 | $6.75 |\n| ProviderStrategy | 1.00 | 1.00 | 1.00 | 2.6 | 2,422 | $5.68 |\n\nOver three runs (with tool and label fixes in between) ToolStrategy scored 0.60 → 0.80 → 1.00 and ProviderStrategy 0.30 → 0.80 → 1.00. ProviderStrategy is cheaper (no extra 'tool' call to deliver the outcome) but was less reliable along the way: once it invented an order number from the customer id instead of escalating an insects complaint, and once it returned malformed JSON that crashed the run, because unlike ToolStrategy it doesn't send the error back for a retry. Production uses **ToolStrategy** (`NIMBUS_AGENT_OUTPUT=tool`).",
+    "code": [
+     {
+      "module": "nimbus.support.agent_eval",
+      "symbol": "score",
+      "why": "How one scenario is scored.",
+      "notes": [
+       {
+        "match": "actions_ok = all(a in actions for a in scenario.get(\"actions\", []))",
+        "text": "The right actions happened, and none when none were expected."
+       },
+       {
+        "match": "outcome_ok = all(getattr(run.outcome, k) == v for k, v in fields.items()) and all(",
+        "text": "The routing fields match the label."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Add every conversation an agent had to fix to the scenario set.",
+     "Score the agent on every change of model, prompt, tool or output strategy, against the history."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/support/agent.py",
+   "role": "build_support_agent(): context, state, outcome, memory, customer tools"
+  },
+  {
+   "path": "src/nimbus/support/agent_eval.py",
+   "role": "The agent scorecard"
+  },
+  {
+   "path": "data/eval/agent_scenarios.json",
+   "role": "10 labelled scenarios"
+  },
+  {
+   "path": "src/academy/labs/langchain/m04_agents.py",
+   "role": "The labs on this page"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Run the tests",
+   "cmd": "uv run pytest"
+  },
+  {
+   "label": "The course app",
+   "cmd": "uv run academy"
+  }
+ ]
+}

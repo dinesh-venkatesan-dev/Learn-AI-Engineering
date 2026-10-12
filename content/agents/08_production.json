@@ -1,0 +1,271 @@
+{
+ "track": "agents",
+ "id": "08",
+ "title": "Production LangGraph",
+ "summary": "What a graph needs before customers rely on it: per-run context (who is asking, on which channel), async execution inside a server, policies per node (retries, fallbacks, timeouts, caching), fault tolerance (retry rules, heartbeats, graceful shutdown), tests that run in a second without an API key, and LangGraph Server for threads, runs and streaming over HTTP. The capstone runs the support desk as it ships (memory, approvals, retries and a fallback provider) on every evaluation this track built, plus an outage drill.",
+ "learn": [
+  "**Runtime context**: typed per-run data; prompt, language and model chosen from it; config vs context",
+  "**Async**: ainvoke, many requests at once, max_concurrency, sync nodes in async graphs",
+  "**Error handling per node**: retry_policy, error_handler, TimeoutPolicy, set_node_defaults, cache_policy",
+  "**Fault tolerance**: retry rules, a backup on later attempts, idle timeouts and heartbeats, per-Send timeouts, draining",
+  "**Testing**: plain functions, the whole graph with a scripted model, injected state, interrupts",
+  "**LangGraph Server**: langgraph.json, `langgraph dev`, the SDK, approvals over HTTP"
+ ],
+ "flow": "agent step: attempt 1 Mistral ─(temporary error)→ attempt 2+ Groq fallback ─(still failing)→ error_handler\n                                                                                     └→ ticket to a person, with an apology\nserved by `langgraph dev` (server/langgraph.json): threads, runs, streaming, approvals resumed over the API",
+ "labs": [
+  {
+   "lab": "agents.runtime-context",
+   "icon": "🪪",
+   "covers": [
+    "lg.l45"
+   ],
+   "explain": "One question, one graph, four contexts: **app, SMS, email, Hindi**. The context picks the prompt, the length, the language and even the **model** (email went to Groq).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m08_production",
+     "symbol": "context_graph",
+     "why": "Behaviour from context.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.async",
+   "icon": "⚡",
+   "covers": [
+    "lg.l46"
+   ],
+   "explain": "Four desk requests **one after another vs asyncio.gather**: only 1.1× faster here, because the shared rate limiter is the bottleneck. Also a fan-out with **max_concurrency**, and a blocking **sync node** that doesn't stall the event loop.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m08_production",
+     "symbol": "sequential_vs_gather",
+     "why": "gather.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m08_production",
+     "symbol": "max_concurrency",
+     "why": "max_concurrency.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.error-handling",
+   "icon": "🩹",
+   "covers": [
+    "lg.l47"
+   ],
+   "explain": "A tracking API that fails twice (**retry_policy**), a courier that's down (**error_handler**), one that hangs (**TimeoutPolicy**), one policy for every node (**set_node_defaults**), and a cached ETA (**cache_policy**).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m08_production",
+     "symbol": "retries_then_handler",
+     "why": "Retries, then a handler.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.fault-tolerance",
+   "icon": "🛡️",
+   "covers": [
+    "lg.l48"
+   ],
+   "explain": "Never retrying a business error, a **backup on attempt 2**, **run vs idle timeouts**, **heartbeats**, **per-Send** limits, and a run **drained** at a step boundary and resumed without repeating a step.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m08_production",
+     "symbol": "graceful_shutdown",
+     "why": "Drain and resume.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m08_production",
+     "symbol": "timeouts_and_heartbeats",
+     "why": "Timeouts and heartbeats.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.testing",
+   "icon": "🧪",
+   "covers": [
+    "lg.l49"
+   ],
+   "explain": "The desk's 10 tests in under a second with **no API calls**: plain functions, the **whole graph with a scripted model**, one part from an **injected state**, an **approval** interrupt, and an **outage**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m08_production",
+     "symbol": "run_tests",
+     "why": "Running them.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.server",
+   "icon": "🌐",
+   "covers": [
+    "lg.l50"
+   ],
+   "explain": "The production desk served by **`langgraph dev`** from server/langgraph.json and used through the **SDK**: assistants, threads, a streamed run, the saved state, and a refund **approved over the API**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m08_production",
+     "symbol": "use_the_api",
+     "why": "The SDK.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m08_production",
+     "symbol": "start_server",
+     "why": "Starting the server.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the support desk, ready for production (capstone)",
+  "summary": "The agent step retries temporary errors (network, rate limits, and Groq's unparsable generations) and switches to the Groq fallback from the second attempt, for the rest of the turn. When every attempt fails, an error handler files the ticket for a person with an apology instead of crashing. The desk is tested offline with a scripted model, and served by LangGraph Server with approvals over the API. The capstone measures all of it together.",
+  "covers": [
+   "lg.l51"
+  ],
+  "steps": [
+   {
+    "id": "retries",
+    "title": "Retries",
+    "icon": "🔁",
+    "tagline": "Retry, then fall back, then a person",
+    "explain": "`retry_policy` on the agent node retries what `classify` calls temporary. From the second attempt the agent uses the fallback model, and keeps it for the rest of the turn (`on_backup`), so a dead provider isn't tried at every step. `error_handler` catches what's left.",
+    "code": [
+     {
+      "module": "nimbus.support.desk",
+      "symbol": "build_support_desk",
+      "why": "Retries and the handler.",
+      "notes": [
+       {
+        "match": "graph.add_node(\"agent\", agent, retry_policy=retry, error_handler=give_up)",
+        "text": "Per-node policies."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.llm.errors",
+      "symbol": "classify",
+      "why": "Temporary or not.",
+      "notes": [
+       {
+        "match": "if status == 400 and \"Parsing failed\" in detail:  # Groq: the model's own output didn't parse; a retry may work",
+        "text": "Found in the drill: gpt-oss sometimes returns its reasoning where a tool call should be."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "The first drill showed the fallback failing too: Groq gpt-oss-120b answered tool calls with unparsable output; gpt-oss-20b (the configured fallback role) passed 3/3."
+    ]
+   },
+   {
+    "id": "tests",
+    "title": "Tests",
+    "icon": "🧪",
+    "tagline": "Offline, in a second",
+    "explain": "tests/test_desk_graph.py runs the whole desk with a scripted model: a lookup and an answer, an approval paused and resumed, a state injected as if review had passed it on, and an outage with and without a fallback.",
+    "code": [
+     {
+      "module": "academy.labs.agents.m08_production",
+      "symbol": "run_tests",
+      "why": "How the lab runs them.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Inject state as a node whose next step doesn't read remaining_steps: inside update_state it is 2."
+    ]
+   },
+   {
+    "id": "serve",
+    "title": "Serve",
+    "icon": "🌐",
+    "tagline": "LangGraph Server",
+    "explain": "server/langgraph.json hosts the desk; the server brings the checkpointer, the queue and streaming. The customer goes in each run's context; approvals resume with a Command over the API.",
+    "code": [
+     {
+      "module": "academy.labs.agents.m08_production",
+      "symbol": "use_the_api",
+      "why": "Using the API.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "`langgraph dev` is for development; production uses a LangGraph Server deployment or the FastAPI track's service."
+    ]
+   },
+   {
+    "id": "capstone",
+    "title": "Capstone",
+    "icon": "🏁",
+    "tagline": "Everything, measured together",
+    "lab": "agents.capstone-eval",
+    "explain": "The desk as it ships on Module 4's 15 agent scenarios, Module 5's 12 memory conversations and Module 6's 8 approval scenarios, plus an outage drill with the primary model unreachable.\n\n| suite (module) | passed |\n|---|---|\n| agent scenarios (4) | **15/15** |\n| memory conversations (5) | **12/12** |\n| approval scenarios (6) | **8/8** |\n\n| outage drill, 5 scenarios | answered correctly | handed to a person | p50 |\n|---|---|---|---|\n| primary down, no fallback | 0/5 | 5 | 2.9 s |\n| **primary down, Groq fallback** | **4/5** | 1 | 6.6 s |\n\nEvery suite passed. With the primary model unreachable, the desk without a fallback gave every customer the apology and a person took over: nothing crashed. With the Groq fallback it answered four of five. The fifth (loyalty points for an amount) still failed after three attempts and went to a person. The fallback is slower, and its answers are plainer (\"delivered on 2026-03-01\", an ISO date and in fact the order date), so treat it as a degraded mode to leave quickly, not a second production model.",
+    "code": [
+     {
+      "module": "academy.labs.agents.m08_production",
+      "symbol": "evaluate_capstone",
+      "why": "The capstone evaluation.",
+      "notes": []
+     },
+     {
+      "module": "academy.labs.agents.m08_production",
+      "symbol": "outage_drill",
+      "why": "The drill.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Run the capstone before every release: it's the only test of the pieces together."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/support/desk.py",
+   "role": "The desk: retries, fallback, error handler"
+  },
+  {
+   "path": "src/nimbus/llm/errors.py",
+   "role": "Which errors are worth retrying"
+  },
+  {
+   "path": "tests/test_desk_graph.py",
+   "role": "The whole graph, offline"
+  },
+  {
+   "path": "server/langgraph.json",
+   "role": "LangGraph Server config"
+  },
+  {
+   "path": "server/desk_graph.py",
+   "role": "The hosted desk"
+  },
+  {
+   "path": "src/academy/labs/agents/m08_production.py",
+   "role": "The labs and the capstone"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Desk graph tests",
+   "cmd": "uv run pytest tests/test_desk_graph.py"
+  },
+  {
+   "label": "Serve the desk",
+   "cmd": "cd server && uv run langgraph dev"
+  }
+ ]
+}

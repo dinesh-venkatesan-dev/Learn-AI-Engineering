@@ -1,0 +1,762 @@
+{
+ "track": "langchain",
+ "id": "01",
+ "title": "Models, messages & prompts",
+ "summary": "The base of every LLM application: **chat models**, **messages**, **multimodal input**, **prompt templates**, **structured output**, the ways to **invoke** a model, what to do when calls **fail**, **model profiles and reasoning models**, and **local models**. The production path builds **Nimbus support triage**: a customer message in, a validated routing decision out, scored on 20 labelled tickets.",
+ "learn": [
+  "**Chat models**: `init_chat_model`, the AIMessage, tokens, and what temperature does",
+  "**Messages**: roles, why models are stateless, shorthand formats, saving and resuming a conversation",
+  "**Multimodal input**: images, several images, and PDF pages, as standard or provider-native blocks",
+  "**Prompt templates**: variables, history placeholders, partials, and few-shot examples, measured",
+  "**Structured output**: output parsers vs `with_structured_output`, Pydantic vs TypedDict, measured",
+  "**Invocation**: invoke, batch, stream and async, timed",
+  "**Errors**: timeouts, retries, and retry-later vs fix-the-request",
+  "**Model profiles and reasoning models**, and **local models** with Ollama"
+ ],
+ "flow": "TICKET  →  prompt template (v2: rules + examples)  →  messages (+ photo if the model can see)\n        →  chat model (configured client, rate limit, timeout, retries)\n        →  structured output (TicketTriage, validated)  →  route  →  stream a reply draft\n        →  evaluate: 20 labelled tickets → accuracy per field, tokens, cost",
+ "labs": [
+  {
+   "lab": "lc.chat-model",
+   "icon": "💬",
+   "covers": [
+    "lc.l01"
+   ],
+   "explain": "Everything in LangChain starts with a **chat model**: `init_chat_model(name, model_provider=...)` gives one object with the same methods for every provider. Calling `invoke()` returns an **AIMessage**, not a string: `.text` is the answer, `.content` can be a string *or a list of blocks* (images, reasoning), `.usage_metadata` is the token count you are billed for, and `.response_metadata` says which model answered and why it stopped.\n\n**Temperature** controls randomness. The lab asks the same question several times at 0 and at 1 and counts how many different answers come back.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.llm.models",
+     "symbol": "get_chat_model",
+     "why": "Nimbus creates every model here: the provider and model are configuration.",
+     "notes": [
+      {
+       "match": "spec |= {\"temperature\": 0",
+       "text": "Temperature 0 by default: Nimbus classifies and extracts, so it wants the most repeatable answers."
+      },
+      {
+       "match": "raise RuntimeError(f\"{key} is not set",
+       "text": "A missing key fails at start-up with a clear message, not as a 401 on a customer's request."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.llm.models",
+     "symbol": "_client",
+     "why": "One cached client per configuration.",
+     "notes": [
+      {
+       "match": "init_chat_model(model, model_provider=provider",
+       "text": "init_chat_model: one function for every provider; the provider package handles the HTTP API."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.langchain.m01_models",
+     "symbol": "chat_model",
+     "why": "The lab: invoke at two temperatures.",
+     "notes": [
+      {
+       "match": "reply = call_the_model(model, prompt)",
+       "text": "invoke() returns an AIMessage: .text, .usage_metadata and .response_metadata."
+      },
+      {
+       "match": "with collect_runs() as collected:",
+       "text": "collect_runs records every model call with its start and end time: that's where the latency column comes from."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.messages",
+   "icon": "🗨️",
+   "covers": [
+    "lc.l02"
+   ],
+   "explain": "A conversation is a **list of messages**: `SystemMessage` (instructions), `HumanMessage` (the user), `AIMessage` (the model). Models are **stateless**: they remember nothing between calls, so \"memory\" means your app stores the list and sends it again with every request, which costs more input tokens every turn.\n\nLangChain also accepts **shorthand** (`(\"human\", \"hi\")` tuples, `{\"role\": ..., \"content\": ...}` dicts, plain strings) and converts it. To resume a chat later, save the messages as JSON and load them back.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.llm.conversations",
+     "symbol": "ConversationStore",
+     "why": "How Nimbus saves and resumes conversations.",
+     "notes": [
+      {
+       "match": "messages_from_dict(json.loads",
+       "text": "JSON back into SystemMessage / HumanMessage / AIMessage objects, metadata included."
+      },
+      {
+       "match": "if not SAFE_ID.match",
+       "text": "The id becomes a file name: never let a request climb out of the folder."
+      },
+      {
+       "match": "tmp.replace(path)",
+       "text": "Write to a temporary file, then rename: a crash never leaves half a conversation."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.langchain.m01_models",
+     "symbol": "messages_lab",
+     "why": "The lab: with and without the history.",
+     "notes": [
+      {
+       "match": "question, forgetful, remembers = ask_with_and_without_history(",
+       "text": "\"Memory\" is resending the list: the model itself keeps nothing."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.multimodal",
+   "icon": "🖼️",
+   "covers": [
+    "lc.l03"
+   ],
+   "explain": "A message's content can be a **list of blocks**: text plus one or more images in the same message. Images go as **base64** data or as a **URL** the provider downloads. LangChain's **standard blocks** (`{\"type\": \"image\", \"base64\": ..., \"mime_type\": ...}`) work with every provider package; **provider-native** blocks (Mistral's `image_url`) are passed through as they are.\n\n**PDFs:** render each page to an image and send it. That works with every vision model; native PDF input exists only on some providers. Every case in this lab is checked against the real file (the receipt total is ₹787.50; Q3 was the best quarter at 62 crore).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.triage",
+     "symbol": "image_block",
+     "why": "How a ticket's photo becomes a content block.",
+     "notes": [
+      {
+       "match": "return {\"type\": \"image\", \"base64\"",
+       "text": "A standard block: the same dict works with Mistral, OpenAI, Anthropic, Gemini..."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.support.triage",
+     "symbol": "Triager.messages",
+     "why": "A ticket with an attachment becomes text + image in one message.",
+     "notes": [
+      {
+       "match": "if ticket.attachment and supports(",
+       "text": "Send the image only if the model's profile says it can read images."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.langchain.m01_models",
+     "symbol": "_pdf_page_png",
+     "why": "A PDF page, rendered to an image.",
+     "notes": [
+      {
+       "match": "get_pixmap",
+       "text": "Render at 1.5× so small print stays readable; the image costs input tokens, so don't go higher than needed."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.prompt-templates",
+   "icon": "📝",
+   "covers": [
+    "lc.l04"
+   ],
+   "explain": "A **ChatPromptTemplate** turns variables into messages: `template.invoke({...})` returns a **PromptValue** you can pass to any model, or turn into messages or a string. **MessagesPlaceholder** inserts a whole list (the chat history). **partial()** fixes some variables up front (the category list never changes per request). **Few-shot** examples are pairs of human and AI messages that show the model exactly what you want.\n\nThe lab compares Nimbus's prompt **v1 (zero-shot)** with **v2 (rules + 3 examples)** on six hard tickets, then shows what the examples cost in tokens.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.prompts",
+     "symbol": "",
+     "why": "The production prompts, versioned.",
+     "notes": [
+      {
+       "match": "FEW_SHOT = FewShotChatMessagePromptTemplate(",
+       "text": "Each example becomes a human message and an AI message: the model sees worked answers, not just rules."
+      },
+      {
+       "match": "\"v2\": ChatPromptTemplate.from_messages(",
+       "text": "v2 = the v1 instructions + routing rules + the examples. A new version, never an edit in place."
+      },
+      {
+       "match": ".partial(categories=CATEGORIES)",
+       "text": "partial(): the category list is filled in once, so callers only pass the ticket."
+      },
+      {
+       "match": "MessagesPlaceholder(\"history\")",
+       "text": "The conversation so far is inserted here, as many messages as there are."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.structured-output",
+   "icon": "🧩",
+   "covers": [
+    "lc.l05",
+    "lc.l06"
+   ],
+   "explain": "Code needs **data**, not prose. Two ways to get it:\n\n- **Output parsers** put format instructions into the prompt and parse the text that comes back: `StrOutputParser` (just the text), `JsonOutputParser` (a dict), `PydanticOutputParser` (a validated object, or an exception if the text doesn't fit).\n- **`with_structured_output(schema)`** asks the provider for structured output, through **tool calling** or **JSON-schema mode**. A **Pydantic** schema returns a validated object, including **nested** lists; a **TypedDict** returns a plain dict nothing validates; `include_raw=True` hands you the raw AIMessage and any parsing error instead of raising.\n\nThe lab runs five methods on the same tickets with the same instructions, and compares accuracy, failures and tokens.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.schema",
+     "symbol": "TicketTriage",
+     "why": "The schema: field types, allowed values and descriptions are all sent to the model.",
+     "notes": [
+      {
+       "match": "description=\"urgent:",
+       "text": "Descriptions are instructions: the urgency rules live in the schema itself."
+      },
+      {
+       "match": "order_id: str | None = Field(",
+       "text": "A pattern the parsed value must match: an invented 'order 4410' fails validation."
+      },
+      {
+       "match": "products: list[ProductMention]",
+       "text": "Nested: a list of objects extracted from free text."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.langchain.m01_models",
+     "symbol": "_structured_method",
+     "why": "with_structured_output, as the lab runs it.",
+     "notes": [
+      {
+       "match": "model.with_structured_output(schema, include_raw=True",
+       "text": "include_raw=True: a dict of raw, parsed and parsing_error, instead of an exception."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.langchain.m01_models",
+     "symbol": "_parser_method",
+     "why": "An output parser, as the lab runs it.",
+     "notes": [
+      {
+       "match": "parsed = parser.invoke(raw)",
+       "text": "The parser reads the reply's text; nothing forced the model to follow the format."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.invocation",
+   "icon": "⚡",
+   "covers": [
+    "lc.l07"
+   ],
+   "explain": "Every model (and every LangChain runnable) has the same methods:\n\n- **invoke**: one input, one output.\n- **batch**: many inputs, run concurrently (`max_concurrency` caps how many at once).\n- **stream**: the output arrives in chunks as it's generated; chunks add up (`+`) to the full message.\n- **ainvoke / abatch / astream**: the async versions, for async web servers.\n\nThe lab times a loop of `invoke()` against `batch()` and `abatch()`, and measures time to first chunk when streaming.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.triage",
+     "symbol": "Triager.triage_many",
+     "why": "Nimbus triages a backlog concurrently.",
+     "notes": [
+      {
+       "match": "pool.map(self.triage, tickets)",
+       "text": "Concurrent calls, results in input order. batch() does the same, but only reports one total time."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.support.triage",
+     "symbol": "Triager.atriage_many",
+     "why": "The async version, for the web service.",
+     "notes": [
+      {
+       "match": "gate = asyncio.Semaphore(concurrency)",
+       "text": "A semaphore bounds the calls in flight, like max_concurrency."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.support.triage",
+     "symbol": "stream_reply",
+     "why": "Reply drafts stream to the support agent.",
+     "notes": [
+      {
+       "match": "for chunk in model.stream(",
+       "text": "Each chunk is an AIMessageChunk; show its text as it arrives."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.langchain.m01_models",
+     "symbol": "invocation",
+     "why": "The lab: the same tickets, three ways.",
+     "notes": [
+      {
+       "match": "batched = batch_them(model, prompts)",
+       "text": "batch(): the calls overlap instead of waiting in line."
+      },
+      {
+       "match": "full = chunk if full is None else full + chunk",
+       "text": "Chunks add up to one message: the same text invoke() would return."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.errors",
+   "icon": "🚨",
+   "covers": [
+    "lc.l08"
+   ],
+   "explain": "Model calls fail, and they fail in two very different ways:\n\n- **Temporary** (timeouts, network errors, 429 rate limits, 5xx): retrying can work. The client retries them for you (`max_retries`, with backoff); `timeout` stops waiting after N seconds.\n- **Permanent** (bad API key, unknown model, input too long): they fail at once, and retrying can never fix them.\n\nYour code needs one decision per failure: **try again later**, or **fix the request**. The lab triggers each failure for real and classifies it.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.llm.errors",
+     "symbol": "classify",
+     "why": "Every model error, sorted by what to do about it.",
+     "notes": [
+      {
+       "match": "if status in RETRY_STATUSES:",
+       "text": "429 and 5xx: temporary. Queue the work and try again later."
+      },
+      {
+       "match": "if status in FIX_STATUSES:",
+       "text": "401, 400, 404: permanent. Retrying wastes time and money; alert someone."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.support.triage",
+     "symbol": "Triager.triage",
+     "why": "One bad ticket must not stop the queue.",
+     "notes": [
+      {
+       "match": "one bad ticket must not stop the queue",
+       "text": "The failure becomes a result with an action, instead of an exception that kills the batch."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.reasoning-profiles",
+   "icon": "🧠",
+   "covers": [
+    "lc.l09"
+   ],
+   "explain": "**model.profile** is a dictionary of what a model can do: context size, image input, reasoning output, tool calling, structured output. When the provider package has no profile for a model (Ministral here), supply one yourself. Then check it in code: only send an image to a model that can read images.\n\n**Reasoning models** think before answering and return the thinking as **reasoning** content blocks. `reasoning_effort` asks for more or less thinking: more thinking means more output tokens (billed) and more time. When streaming, the reasoning arrives first, then the answer. This lab uses `openai/gpt-oss-20b` on Groq's free plan (Mistral's reasoning model is rate-limited on its free plan: see the errors lab).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.llm.models",
+     "symbol": "_client",
+     "why": "Profiles Nimbus fills in for models the package doesn't know.",
+     "notes": [
+      {
+       "match": "if chat.profile is None and model in KNOWN_PROFILES:",
+       "text": "The installed package has no profile for this model: use the one Nimbus keeps, from the provider's model card."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.llm.models",
+     "symbol": "supports",
+     "why": "Check before sending.",
+     "notes": [
+      {
+       "match": "return bool((model.profile or {}).get(capability))",
+       "text": "Unknown counts as no: never send an image on a guess."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.langchain.m01_models",
+     "symbol": "reasoning_profiles",
+     "why": "The lab: three effort levels, then a stream.",
+     "notes": [
+      {
+       "match": "think(reasoner, puzzle",
+       "text": "reasoning_effort is passed straight to the provider; supported values depend on the model."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.local-models",
+   "icon": "💻",
+   "covers": [
+    "lc.l10"
+   ],
+   "explain": "**Ollama** runs open models on your own computer as a small server, and LangChain talks to it like any provider: `invoke`, `stream`, tools and structured output, with only the model name changed. No API key, no rate limit, works offline, and your data never leaves the machine.\n\nSmall reasoning models (qwen3:1.7b) can switch **thinking off**, which makes them much faster. The lab compares cloud and local, tries tool calling, and swaps the production triager onto the local model unchanged.\n\nNeeds `ollama serve` running and `ollama pull qwen3:1.7b` (about 1.4 GB); the lab tells you if either is missing.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.llm.models",
+     "symbol": "get_chat_model",
+     "why": "The local role: the same function, a different provider.",
+     "notes": [
+      {
+       "match": "if role == \"local\":",
+       "text": "Ollama, at the configured URL; no API key and no rate limiter needed."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.langchain.m01_models",
+     "symbol": "local_models",
+     "why": "The lab: cloud vs local, thinking on and off.",
+     "notes": [
+      {
+       "match": "local_fast = get_chat_model(role=\"local\", reasoning=False)",
+       "text": "reasoning=False turns off qwen3's thinking: far fewer tokens, much faster."
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus support triage v1",
+  "summary": "The support desk gets hundreds of messages a day in English, Hindi and Tamil. Triage reads each one and returns a validated decision (category, urgency, order id, language, whether a human must step in), then drafts a reply. Every choice below (prompt version, structured output method) was made with the scorecard in the last step.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "model",
+    "title": "Model",
+    "icon": "🔌",
+    "tagline": "One configured client per role",
+    "explain": "Every model call in Nimbus goes through `get_chat_model()`. The provider and model of each role (default, reasoning, local) are **configuration**, so switching provider is an environment variable, not a code change. Timeouts, retries and the client-side **rate limiter** are set once, and a missing API key fails at start-up.\n\nThe rate limiter is shared **per provider**: a provider counts every request from your key, whichever model it names, so two models with separate limiters would together exceed the limit.",
+    "code": [
+     {
+      "module": "nimbus.llm.models",
+      "symbol": "get_chat_model",
+      "why": "The one entry point for every model call.",
+      "notes": [
+       {
+        "match": "spec |= {\"temperature\": 0",
+        "text": "Defaults first, then per-call overrides (a lab's temperature=1 gets its own cached client)."
+       },
+       {
+        "match": "raise RuntimeError(f\"{key} is not set",
+        "text": "Fail fast and clearly when a key is missing."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.llm.models",
+      "symbol": "_client",
+      "why": "Clients are cached: one per configuration.",
+      "notes": [
+       {
+        "match": "# One client per configuration",
+        "text": "A new client per request would open new HTTP connections every time."
+       },
+       {
+        "match": "options[\"rate_limiter\"] = rate_limiter(provider, requests_per_second)",
+        "text": "Every client of a provider shares that provider's limiter."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.llm.models",
+      "symbol": "rate_limiter",
+      "why": "A token bucket per provider.",
+      "notes": [
+       {
+        "match": "return InMemoryRateLimiter(",
+        "text": "0.4 requests/s with bursts of 5: under Mistral's free-plan 30 requests/min."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "With several server processes, an in-memory limiter only sees its own process: share one limit through Redis, or route calls through an LLM gateway.",
+     "Keep keys in a secret manager in production; `.env` is for local development, and it's git-ignored.",
+     "Log the model name and version with every call (`response_metadata`), so a quality change can be traced to a model change."
+    ]
+   },
+   {
+    "id": "conversations",
+    "title": "Conversations",
+    "icon": "🗨️",
+    "tagline": "Store the messages, resend them",
+    "explain": "A support conversation spans many requests, and the model remembers none of them. Nimbus stores each conversation as JSON (LangChain's `messages_to_dict` format) and loads it back to continue. The reply prompt has a `MessagesPlaceholder` where the history goes.",
+    "code": [
+     {
+      "module": "nimbus.llm.conversations",
+      "symbol": "ConversationStore",
+      "why": "Save, load and append.",
+      "notes": [
+       {
+        "match": "if not SAFE_ID.match",
+        "text": "Validate the id before using it as a file name."
+       },
+       {
+        "match": "tmp.replace(path)",
+        "text": "Atomic write: readers never see a half-written file."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Use a database table (one row per message, indexed by conversation id) once you have more than one server; the JSON format stays the same.",
+     "History grows with every turn, and so does the cost of every call: trim or summarise long conversations (LangChain Module 4: managing context).",
+     "Conversations contain personal data: set a retention period and delete on request."
+    ]
+   },
+   {
+    "id": "prompts",
+    "title": "Prompts",
+    "icon": "📝",
+    "tagline": "Versioned templates, chosen by the scorecard",
+    "explain": "Prompts are code: each change gets a **new version**, and the scorecard decides which one ships (`NIMBUS_TRIAGE_PROMPT_VERSION`). v1 is zero-shot; v2 adds routing rules and three worked examples. On the 20 labelled tickets v2 got **all fields right on 0.80** of them against **0.55–0.60** for v1 (two runs), for 448 more input tokens per ticket (measured with tool calling; see Evaluate).",
+    "code": [
+     {
+      "module": "nimbus.support.prompts",
+      "symbol": "",
+      "why": "Every prompt Nimbus sends.",
+      "notes": [
+       {
+        "match": "RULES = ",
+        "text": "The edge cases v1 got wrong, written down as rules."
+       },
+       {
+        "match": "FEW_SHOT = FewShotChatMessagePromptTemplate(",
+        "text": "Three worked examples: a damaged order, Hinglish, an allergy emergency."
+       },
+       {
+        "match": "\"v2\": ChatPromptTemplate.from_messages(",
+        "text": "A new version next to the old one: both can be scored and compared."
+       },
+       {
+        "match": "MessagesPlaceholder(\"history\")",
+        "text": "The reply prompt takes the conversation so far."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Store the prompt version with every result, so a complaint can be traced to the exact prompt that produced it.",
+     "Never edit a shipped version in place: add v3, score it, then switch the setting.",
+     "LangSmith's Prompt Hub can hold versions outside the code (Shipping to production, Module 4)."
+    ]
+   },
+   {
+    "id": "triage",
+    "title": "Triage",
+    "icon": "🧩",
+    "tagline": "A message in, a validated object out",
+    "lab": "lc.triage-one",
+    "explain": "`Triager.triage()` builds the messages (with the ticket's photo when the model can read images), asks for a **TicketTriage** with `with_structured_output(..., include_raw=True)`, and returns a result that always has the raw reply, the latency, and either the parsed object or the reason it failed. Then `stream_reply()` drafts an answer token by token for the support agent.\n\n**Run it** on any labelled ticket (the fields are checked against the label) or type your own.",
+    "code": [
+     {
+      "module": "nimbus.support.schema",
+      "symbol": "TicketTriage",
+      "why": "The routing decision, as a schema.",
+      "notes": [
+       {
+        "match": "description=\"urgent:",
+        "text": "The urgency definition the model must follow."
+       },
+       {
+        "match": "needs_human: bool = Field(",
+        "text": "The field the support desk routes on: wrong here means a customer waits."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.triage",
+      "symbol": "Triager.__init__",
+      "why": "Configured once, used for every ticket.",
+      "notes": [
+       {
+        "match": "with_structured_output(TicketTriage, method=method, include_raw=True)",
+        "text": "JSON-schema mode by default: chosen by the scorecard (see Evaluate)."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.triage",
+      "symbol": "Triager.messages",
+      "why": "Text, plus the photo when the model can see.",
+      "notes": [
+       {
+        "match": "if ticket.attachment and supports(",
+        "text": "Checked against the model's profile, not assumed."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.triage",
+      "symbol": "stream_reply",
+      "why": "The reply draft, streamed.",
+      "notes": [
+       {
+        "match": "if chunk.text:",
+        "text": "Skip empty chunks (the first chunk often carries only metadata)."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Route on the validated fields only; keep `summary` for humans.",
+     "Record the raw reply and token usage of every triage for audits and cost tracking.",
+     "Customer text is untrusted input: it can contain instructions aimed at the model (prompt injection). Never let triage output trigger refunds or other actions without a check (LangChain Module 5: guardrails)."
+    ]
+   },
+   {
+    "id": "reliability",
+    "title": "Reliability",
+    "icon": "🛟",
+    "tagline": "Failures become decisions, not crashes",
+    "explain": "A backlog of tickets must survive a timeout, a rate limit or one malformed reply. `triage()` catches every failure and turns it into a result with an **action**: `retry` (temporary: put it back on the queue) or `fix` (the request or configuration is wrong: alert someone). A reply that doesn't match the schema is a `fix` result with the validation message, and the raw reply is kept for debugging.",
+    "code": [
+     {
+      "module": "nimbus.llm.errors",
+      "symbol": "classify",
+      "why": "Retry later, or fix the request.",
+      "notes": [
+       {
+        "match": "if status in RETRY_STATUSES:",
+        "text": "Temporary: 429 and 5xx."
+       },
+       {
+        "match": "if status in FIX_STATUSES:",
+        "text": "Permanent: 400, 401, 404..."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.triage",
+      "symbol": "Triager._result",
+      "why": "Every outcome becomes a TriageResult.",
+      "notes": [
+       {
+        "match": "if out[\"parsing_error\"] is not None or out[\"parsed\"] is None:",
+        "text": "The model answered, but not in the schema: keep the raw reply, mark it 'fix'."
+       },
+       {
+        "match": "failure = classify(out)",
+        "text": "An exception: classify it into retry or fix."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.triage",
+      "symbol": "Triager.triage_many",
+      "why": "A batch where one failure doesn't stop the rest.",
+      "notes": [
+       {
+        "match": "pool.map(self.triage, tickets)",
+        "text": "Each ticket succeeds or fails on its own."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Send `retry` results to a queue with exponential backoff and a maximum number of attempts; send `fix` results to an alert.",
+     "Set the timeout from measured p95 latency plus margin, not a guess: too short wastes the tokens already generated.",
+     "Add a fallback model for when the main provider is down (LangChain Module 2: fallbacks), and a circuit breaker (Shipping to production, Module 1)."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "Score every field routing depends on",
+    "lab": "lc.triage-eval",
+    "explain": "20 labelled tickets (Hinglish, Hindi, Tamil, legal threats, a chargeback, contamination, a missing order number) and a scorecard: **valid** (replies that matched the schema), **accuracy per field** (category, urgency, order id, language, needs_human), **all fields right** (what an agent never has to fix), **latency** p50/p95 (including time queued behind the rate limit), **tokens** and **cost per 1,000 tickets** at a reference paid price. Every run is added to the history.\n\nMeasured so far (Mistral ministral-14b):\n\n| prompt · method | valid | all fields right | input tokens | $ / 1k tickets |\n|---|---|---|---|---|\n| v1 · tool calling | 0.95 | 0.55–0.60 | 583 | $2.02 |\n| v2 · tool calling | 1.00 | 0.80 | 1,031 | $2.92 |\n| **v2 · JSON schema** | **1.00** | **0.85** | **534** | **$1.87** |\n\nSo production uses **v2 with JSON-schema mode**: the rules and examples fixed urgency and needs_human, and JSON-schema mode kept that accuracy while sending the schema outside the prompt (36% cheaper than tool calling). Run it yourself: 20 model calls, about a minute under the free-plan rate limit.",
+    "code": [
+     {
+      "module": "nimbus.support.evaluation",
+      "symbol": "evaluate",
+      "why": "Run the labelled tickets and score them.",
+      "notes": [
+       {
+        "match": "results = triager.triage_many(",
+        "text": "The production triager, exactly as it runs for real tickets."
+       },
+       {
+        "match": "all_correct=",
+        "text": "The number that matters most: tickets an agent would never have to fix."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.evaluation",
+      "symbol": "field_matches",
+      "why": "Exact match per field.",
+      "notes": [
+       {
+        "match": "got.get(f) == expected[f]",
+        "text": "A failed triage counts as wrong on every field."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Grow the labelled set from real tickets that agents corrected: they are exactly the cases the model gets wrong.",
+     "Run the scorecard in CI for every prompt, model or schema change, and block a release that lowers 'all fields right'.",
+     "Watch the same metrics on live traffic: the share of triages agents change is your real accuracy (Shipping to production, Module 4)."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/config.py",
+   "role": "Settings: models per role, rate limits, prompt version, structured output method"
+  },
+  {
+   "path": "src/nimbus/llm/models.py",
+   "role": "get_chat_model(): configured clients, shared rate limiters, model profiles"
+  },
+  {
+   "path": "src/nimbus/llm/errors.py",
+   "role": "classify(): retry later vs fix the request"
+  },
+  {
+   "path": "src/nimbus/llm/usage.py",
+   "role": "Tokens and cost"
+  },
+  {
+   "path": "src/nimbus/llm/conversations.py",
+   "role": "ConversationStore: save and resume conversations"
+  },
+  {
+   "path": "src/nimbus/support/schema.py",
+   "role": "TicketTriage: the validated routing decision"
+  },
+  {
+   "path": "src/nimbus/support/prompts.py",
+   "role": "Versioned triage prompts (v1, v2) and the reply prompt"
+  },
+  {
+   "path": "src/nimbus/support/triage.py",
+   "role": "Triager: one, many, async; streaming reply drafts"
+  },
+  {
+   "path": "src/nimbus/support/evaluation.py",
+   "role": "The triage scorecard"
+  },
+  {
+   "path": "data/eval/tickets.json",
+   "role": "20 labelled tickets"
+  },
+  {
+   "path": "src/academy/labs/langchain/m01_models.py",
+   "role": "The labs on this page"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Triage a message and stream a reply draft",
+   "cmd": "uv run nimbus support triage \"My order NC-12093 came with the wrong beans\""
+  },
+  {
+   "label": "Score triage on the labelled tickets (20 model calls)",
+   "cmd": "uv run nimbus support eval --prompt v2 --method json_schema"
+  },
+  {
+   "label": "Local model (once): start Ollama and download the model",
+   "cmd": "ollama serve & ollama pull qwen3:1.7b"
+  },
+  {
+   "label": "Run the tests",
+   "cmd": "uv run pytest"
+  },
+  {
+   "label": "The course app",
+   "cmd": "uv run academy"
+  }
+ ]
+}

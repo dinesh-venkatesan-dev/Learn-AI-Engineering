@@ -1,0 +1,363 @@
+{
+ "track": "rag",
+ "id": "05",
+ "title": "Embeddings & vector stores",
+ "summary": "Chunks become vectors, vectors go into a store, and a question's vector finds its nearest chunks. This module measures every choice on the way: **which embedding model** (two local, one multilingual, one API), **which language** the question is in (Nimbus customers write in Hindi, Tamil and Hinglish), **which store** (Chroma, FAISS, pgvector), how an index stays **in sync** with changing documents, and how ingestion survives **scale**: batches, duplicates, bad records and crashes. Production keeps the local model, adds query translation (multilingual questions found: 4/10 → 10/10) and an HNSW index.",
+ "learn": [
+  "**Embeddings**: embed_query and embed_documents, cosine similarity, and choosing a model on your own questions",
+  "**Multilingual retrieval**: a multilingual model, an API model, or translating the question",
+  "**Vector stores and Chroma**: add, search with scores, MMR, filters, persist, update and delete",
+  "**FAISS**: distance strategies, saving and loading, and exact vs approximate (HNSW) search",
+  "**pgvector**: production's index, the same search in SQL, and an HNSW index",
+  "**Index sync and ingestion at scale**: record managers, batching, concurrency, deduplication, dead letters, resuming"
+ ],
+ "flow": "INGEST   chunks ─embed_documents─→ vectors ─→ pgvector table (+ HNSW index) ← record manager: hash per chunk, per source\nQUERY    question ─(non-ASCII? translate to English: 1 cached chat call)─→ embed_query ─→ nearest k by cosine distance",
+ "labs": [
+  {
+   "lab": "rag.embeddings",
+   "icon": "🧭",
+   "covers": [
+    "lc.l42",
+    "rag.l24"
+   ],
+   "explain": "An **embedding** turns text into a vector; texts with similar meaning get vectors pointing the same way. The lab shows what `embed_query` and `embed_documents` return and how cosine similarity ranks them, then measures four models on production's chunks and all 45 questions: **bge-small** (local, 384 dims), **bge-base** (local, 768), **multilingual MiniLM** (local, 384) and **mistral-embed** (API, 1024): quality, speed and index size.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.embeddings",
+     "symbol": "LocalEmbeddings",
+     "why": "Production's local model (FastEmbed).",
+     "notes": [
+      {
+       "match": "def embed_query(self, text: str) -> list[float]:",
+       "text": "Questions use query_embed: bge adds its search instruction."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.embeddings",
+     "symbol": "get_embeddings",
+     "why": "The provider is a setting.",
+     "notes": [
+      {
+       "match": "if settings.embedding_provider == \"mistral\":",
+       "text": "mistral-embed: 1024 dimensions, so a separate table."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.rag.m05_storage",
+     "symbol": "compare_models",
+     "why": "The comparison.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.multilingual",
+   "icon": "🌏",
+   "covers": [
+    "rag.l25"
+   ],
+   "explain": "Ten questions in Hindi, Tamil, Hinglish, Spanish, French and German against English documents, four ways: the **English-only** model, a **multilingual** model, the **API** model, and **translating the question** first (also restricted to non-ASCII questions, production's policy). Then an answer in the user's own language.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.retriever",
+     "symbol": "needs_translation",
+     "why": "Production's policy.",
+     "notes": [
+      {
+       "match": "return any(not c.isascii() and c.isalpha() for c in question)",
+       "text": "Devanagari, Tamil and accented letters trigger translation; ASCII Hinglish doesn't."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.retriever",
+     "symbol": "translate",
+     "why": "One cached chat call.",
+     "notes": [
+      {
+       "match": "if path.exists():",
+       "text": "The same question is asked again and again: translate it once."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.chroma",
+   "icon": "🗄️",
+   "covers": [
+    "lc.l43",
+    "rag.l26"
+   ],
+   "explain": "Every LangChain vector store has the same interface: add documents, search (with scores, with MMR for diversity), delete by id. The lab uses it with the in-memory store and with **Chroma**, a local database that persists to disk: reopen without re-embedding, distance vs relevance scores, metadata filters (`$lt`, `$and`, `$in`), and reads, updates and deletes without searching.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m05_storage",
+     "symbol": "metadata_filters",
+     "why": "Chroma's filter syntax.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.rag.m05_storage",
+     "symbol": "crud_without_searching",
+     "why": "Reads, updates, deletes.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.faiss",
+   "icon": "⚡",
+   "covers": [
+    "rag.l27"
+   ],
+   "explain": "**FAISS** is a vector search library: build an index from production's chunks, search with L2 or cosine, save and load (with pickle's warning), merge and delete. Then raw FAISS on 20,000 vectors: **exact** search (compares everything) against **HNSW** (walks a graph), with the speed and recall of each `efSearch`.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m05_storage",
+     "symbol": "exact_vs_approximate",
+     "why": "Flat vs HNSW.",
+     "notes": [
+      {
+       "match": "hnsw.hnsw.efSearch = ef",
+       "text": "Candidates explored per query: the recall/speed dial."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.pgvector",
+   "icon": "🐘",
+   "covers": [
+    "rag.l28"
+   ],
+   "explain": "Production's own index: **pgvector** stores vectors in a Postgres column. The lab searches it through LangChain, runs the same search in SQL with the `<=>` operator (same distances), and shows the query plan walking the **HNSW index** production created.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.store",
+     "symbol": "VectorIndex.ensure_vector_index",
+     "why": "Production: an HNSW index, created once.",
+     "notes": [
+      {
+       "match": "if not self.store.is_valid_index(name):",
+       "text": "Idempotent: every start checks, only the first creates."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.rag.m05_storage",
+     "symbol": "plain_sql",
+     "why": "It's just SQL.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.index-sync",
+   "icon": "🔄",
+   "covers": [
+    "rag.l29"
+   ],
+   "explain": "Re-running ingestion must not duplicate chunks or leave stale ones behind. LangChain's `index()` with a **record manager** remembers a hash of every chunk per source: unchanged chunks are skipped, edited ones replaced, and removed sources deleted (`cleanup=\"full\"`).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.store",
+     "symbol": "VectorIndex.index",
+     "why": "Production's sync.",
+     "notes": [
+      {
+       "match": "cleanup=\"full\" if full_sync else \"incremental\"",
+       "text": "A full run is the whole corpus: anything missing is deleted."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.ingestion-scale",
+   "icon": "🏭",
+   "covers": [
+    "rag.l30"
+   ],
+   "explain": "A messy export of support tickets (empty rows, pasted logs, re-exported copies) through a pipeline that streams in **batches**, embeds **concurrently** with a limit, removes **duplicates**, sets bad records aside in a **dead-letter** list, and **resumes** after a simulated crash without duplicating anything.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m05_storage",
+     "symbol": "resumable_ingest",
+     "why": "The resumable pipeline.",
+     "notes": [
+      {
+       "match": "progress_file.write_text(json.dumps(sorted(done)))",
+       "text": "Progress recorded only after a batch is written."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.rag.m05_storage",
+     "symbol": "embed_concurrently",
+     "why": "Concurrent batches with a semaphore.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus retrieval v2",
+  "summary": "Four embedding models and two query policies were measured on all 45 questions and a 10-question multilingual set. Production keeps **bge-small** (local, free, private, 4 ms per question) and adds a **Retriever** that translates non-English questions to English first (one cached chat call): multilingual questions found 4/10 → 10/10 with English quality unchanged. The pgvector table gets an **HNSW index**, and the embedding provider becomes a setting.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "model",
+    "title": "Embedding model",
+    "icon": "🧭",
+    "tagline": "Local by default, API as a setting",
+    "explain": "`get_embeddings(settings)` returns the configured model. bge-small stays the default: on production's chunks it matched bge-base and beat the multilingual model on English. mistral-embed was best on English (hit@5 0.93 vs 0.89) but costs a network request per question (~1.5 s here), shares the chat model's rate limit, and sends text to the provider; switching also means re-embedding into a 1024-dimension table.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.embeddings",
+      "symbol": "get_embeddings",
+      "why": "The factory.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.config",
+      "symbol": "Settings",
+      "why": "Settings.",
+      "notes": [
+       {
+        "match": "embedding_provider: Literal[\"local\", \"mistral\"] = \"local\"",
+        "text": "The provider."
+       },
+       {
+        "match": "query_translation: Literal[\"off\", \"non_ascii\", \"always\"] = Field(",
+        "text": "The query policy."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Changing the embedding model invalidates every vector: re-embed into a new table and switch over, never mix models in one index.",
+     "Record the model name with the index (table name or metadata) so a mismatch fails loudly."
+    ]
+   },
+   {
+    "id": "retriever",
+    "title": "Retriever",
+    "icon": "🔎",
+    "tagline": "Prepare the query, then search",
+    "explain": "The new `Retriever` is the one place questions are searched. It prepares the query first: by policy, a question with non-ASCII letters is translated to English (cached by question), then embedded and searched. Later modules add filters, hybrid search and reranking here.",
+    "code": [
+     {
+      "module": "nimbus.rag.retriever",
+      "symbol": "Retriever",
+      "why": "The retriever.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.retriever",
+      "symbol": "prepare",
+      "why": "Query preparation.",
+      "notes": [
+       {
+        "match": "if model is not None and needs_translation(question, policy):",
+        "text": "Only when the policy says so: English questions cost nothing extra."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.retriever",
+      "symbol": "needs_translation",
+      "why": "The policy.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Log the original and the translated query together: a bad translation is otherwise invisible.",
+     "Answer in the user's language (Module 7's prompt does this)."
+    ]
+   },
+   {
+    "id": "index",
+    "title": "HNSW index",
+    "icon": "🐘",
+    "tagline": "Approximate search on pgvector",
+    "explain": "`VectorIndex` creates an HNSW index on the embedding column once (m=16, ef_construction=64). At 99 chunks Postgres may still scan the table; the index pays off as the corpus grows, at a small recall cost that `hnsw.ef_search` controls.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.store",
+      "symbol": "VectorIndex.ensure_vector_index",
+      "why": "Created once.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Build the index after a bulk load, not before: inserting into an HNSW index is slower than building it.",
+     "Watch recall when tuning ef_search: measure against an exact search on a sample."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "Models × query policy",
+    "lab": "rag.embeddings-eval",
+    "explain": "Measured on production chunks:\n\n| configuration | hit@5 (45) | MRR | multilingual top-3 (10) | per question |\n|---|---|---|---|---|\n| bge-small | 0.89 | 0.705 | 0.4 | free |\n| **bge-small + translate non-ASCII** | **0.89** | **0.705** | **1.0** | a chat call for 7 of 10 |\n| bge-base | 0.89 | 0.687 | 0.5 | free |\n| multilingual MiniLM | 0.82 | 0.669 | 0.8 | free |\n| mistral-embed | 0.93 | 0.756 | 0.8 | an API request |",
+    "code": [
+     {
+      "module": "academy.labs.rag.m05_storage",
+      "symbol": "embeddings_eval",
+      "why": "The evaluation.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Add every question that failed in production to the multilingual set, in the language it was asked.",
+     "Re-run when the chat model changes: translation quality moves with it."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/rag/retriever.py",
+   "role": "The retriever: query translation policy, translation cache, search"
+  },
+  {
+   "path": "src/nimbus/rag/ingestion/embeddings.py",
+   "role": "Local embeddings, metering, get_embeddings (local | mistral)"
+  },
+  {
+   "path": "src/nimbus/rag/ingestion/store.py",
+   "role": "pgvector table, HNSW index, record manager sync"
+  },
+  {
+   "path": "data/eval/multilingual.json",
+   "role": "10 questions in 5 languages with their evidence"
+  },
+  {
+   "path": "src/academy/labs/rag/m05_storage.py",
+   "role": "The labs"
+  },
+  {
+   "path": "tests/test_retriever.py",
+   "role": "Translation policy and cache"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Start Postgres + pgvector",
+   "cmd": "docker compose up -d"
+  },
+  {
+   "label": "Ingest (creates the HNSW index once)",
+   "cmd": "uv run nimbus rag ingest"
+  },
+  {
+   "label": "Retriever tests",
+   "cmd": "uv run pytest tests/test_retriever.py"
+  }
+ ]
+}

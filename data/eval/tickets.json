@@ -1,0 +1,222 @@
+[
+ {
+  "id": "t01",
+  "text": "Ordered 2 bags of Monsoon Malabar Reserve on 2 Oct (NC-31877). Tracking says delivered but nothing is at my door.",
+  "expected": {
+   "category": "order_problem",
+   "urgency": "high",
+   "order_id": "NC-31877",
+   "language": "en",
+   "needs_human": false
+  }
+ },
+ {
+  "id": "t02",
+  "text": "Can I switch my subscription from Chikmagalur Classic to Nilgiri Sunrise starting with the next delivery?",
+  "expected": {
+   "category": "subscription",
+   "urgency": "normal",
+   "order_id": null,
+   "language": "en",
+   "needs_human": false
+  }
+ },
+ {
+  "id": "t03",
+  "text": "I bought an unopened bag of Nilgiri Sunrise last week and want to return it for a refund. Order NC-4410.",
+  "expected": {
+   "category": "refund_return",
+   "urgency": "normal",
+   "order_id": "NC-4410",
+   "language": "en",
+   "needs_human": true
+  }
+ },
+ {
+  "id": "t04",
+  "text": "Please cancel order NC-55021, I placed it twice by mistake!",
+  "expected": {
+   "category": "cancel_order",
+   "urgency": "normal",
+   "order_id": "NC-55021",
+   "language": "en",
+   "needs_human": false
+  }
+ },
+ {
+  "id": "t05",
+  "text": "Which blend is best for a moka pot? I like chocolatey coffee.",
+  "expected": {
+   "category": "product_question",
+   "urgency": "low",
+   "order_id": null,
+   "language": "en",
+   "needs_human": false
+  }
+ },
+ {
+  "id": "t06",
+  "text": "The barista at your Indiranagar café was super friendly today and the cortado was perfect. Thanks!",
+  "expected": {
+   "category": "cafe_experience",
+   "urgency": "low",
+   "order_id": null,
+   "language": "en",
+   "needs_human": false
+  }
+ },
+ {
+  "id": "t07",
+  "text": "Found a small piece of plastic in my cold brew bottle from the Bandra café. My daughter almost swallowed it.",
+  "expected": {
+   "category": "allergy_safety",
+   "urgency": "urgent",
+   "order_id": null,
+   "language": "en",
+   "needs_human": true
+  }
+ },
+ {
+  "id": "t08",
+  "text": "You charged my card twice for order NC-78123 and nobody has replied in 5 days. If this isn't refunded by Friday I'm filing a chargeback.",
+  "expected": {
+   "category": "refund_return",
+   "urgency": "urgent",
+   "order_id": "NC-78123",
+   "language": "en",
+   "needs_human": true
+  }
+ },
+ {
+  "id": "t09",
+  "text": "मेरा ऑर्डर NC-20981 अभी तक नहीं आया, दस दिन हो गए।",
+  "expected": {
+   "category": "order_problem",
+   "urgency": "high",
+   "order_id": "NC-20981",
+   "language": "hi",
+   "needs_human": false
+  }
+ },
+ {
+  "id": "t10",
+  "text": "Bhai mera subscription band kar do, ab coffee kam peeta hoon.",
+  "expected": {
+   "category": "subscription",
+   "urgency": "normal",
+   "order_id": null,
+   "language": "hi",
+   "needs_human": false
+  }
+ },
+ {
+  "id": "t11",
+  "text": "எனது காபி பையில் பூச்சிகள் இருந்தன! ஆர்டர் NC-66310",
+  "expected": {
+   "category": "allergy_safety",
+   "urgency": "urgent",
+   "order_id": "NC-66310",
+   "language": "ta",
+   "needs_human": true
+  }
+ },
+ {
+  "id": "t12",
+  "text": "Is Chikmagalur Classic good for cold brew, and do you sell 1 kg bags?",
+  "expected": {
+   "category": "product_question",
+   "urgency": "low",
+   "order_id": null,
+   "language": "en",
+   "needs_human": false
+  }
+ },
+ {
+  "id": "t13",
+  "text": "I received Nilgiri Sunrise instead of the Monsoon Malabar Reserve I ordered (NC-12093).",
+  "expected": {
+   "category": "order_problem",
+   "urgency": "high",
+   "order_id": "NC-12093",
+   "language": "en",
+   "needs_human": false
+  }
+ },
+ {
+  "id": "t14",
+  "text": "Can I still cancel the order I placed yesterday? It was from my wife's account so I don't have the order number.",
+  "expected": {
+   "category": "cancel_order",
+   "urgency": "normal",
+   "order_id": null,
+   "language": "en",
+   "needs_human": false
+  }
+ },
+ {
+  "id": "t15",
+  "text": "Your latte gave me terrible stomach cramps, I think the milk was off.",
+  "expected": {
+   "category": "allergy_safety",
+   "urgency": "urgent",
+   "order_id": null,
+   "language": "en",
+   "needs_human": true
+  }
+ },
+ {
+  "id": "t16",
+  "text": "Skip my next delivery please, I still have a full bag.",
+  "expected": {
+   "category": "subscription",
+   "urgency": "normal",
+   "order_id": null,
+   "language": "en",
+   "needs_human": false
+  }
+ },
+ {
+  "id": "t17",
+  "text": "I'm taking you to consumer court. Three damaged deliveries in a row (latest NC-90112) and no replacement.",
+  "expected": {
+   "category": "order_problem",
+   "urgency": "urgent",
+   "order_id": "NC-90112",
+   "language": "en",
+   "needs_human": true
+  }
+ },
+ {
+  "id": "t18",
+  "text": "Do you have any decaf options? Asking for my mom.",
+  "expected": {
+   "category": "product_question",
+   "urgency": "low",
+   "order_id": null,
+   "language": "en",
+   "needs_human": false
+  }
+ },
+ {
+  "id": "t19",
+  "text": "The music at the Park Street café is way too loud to work there. Otherwise I love the place.",
+  "expected": {
+   "category": "cafe_experience",
+   "urgency": "low",
+   "order_id": null,
+   "language": "en",
+   "needs_human": false
+  }
+ },
+ {
+  "id": "t20",
+  "text": "Just wanted to say Monsoon Malabar is the best espresso bean I've had in years!",
+  "expected": {
+   "category": "other",
+   "urgency": "low",
+   "order_id": null,
+   "language": "en",
+   "needs_human": false
+  }
+ }
+]

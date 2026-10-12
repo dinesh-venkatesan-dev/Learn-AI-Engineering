@@ -1,0 +1,314 @@
+{
+ "track": "production",
+ "id": "04",
+ "title": "Evaluation, datasets & prompts",
+ "summary": "Know whether a change made the app better before users find out. The support reply gets a dataset with splits and versions, code checks and LLM judges (checked against known grades before they're trusted), experiments compared example by example to find regressions, agent trajectories checked step by step, tests in pytest, prompts kept as versioned commits with a production tag, and a release gate that promotes a prompt only if nothing got worse. The capstone runs the whole improvement loop: users' thumbs-down become a regression set, a fix is evaluated against production, released by moving a tag, and checked on the live app.",
+ "learn": [
+  "**Datasets, targets, evaluators**: code checks, LLM judges, several scores, categories, summary metrics",
+  "**Agent evals**: trajectory match modes, tool arguments, trajectory judges, single-step tests",
+  "**Comparing versions**: regressions per example, cost and speed, repetitions, pairwise judges",
+  "**Tests in pytest**, **local evaluations**, quality gates and **backtesting** on real traffic",
+  "**Prompts as versions**, **gated releases** and rollbacks, **monitoring** and online evaluation"
+ ],
+ "flow": "production (prompt tag) ─→ answers ─→ users 👍/👎 ─→ 👎 → regression set\n   candidate prompt (a commit) ─→ evaluate on regressions + smoke ─→ nothing worse? ─→ move the production tag ─→ verify",
+ "labs": [
+  {
+   "lab": "lc.evaluation",
+   "icon": "📏",
+   "covers": [
+    "lc.l54"
+   ],
+   "explain": "The 12-example support reply **dataset**, the reply as the **target**, **code checks** on every example and an **LLM judge** on the fact questions.\n\nRuns locally with langsmith.evaluate(upload_results=False); steps that need LangSmith's servers run when Nimbus has its own key.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.reply_eval",
+     "symbol": "run_experiment",
+     "why": "evaluate(), nothing uploaded.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.agent-evals",
+   "icon": "🧭",
+   "covers": [
+    "lc.l55",
+    "smith.l18"
+   ],
+   "explain": "Three questions through an agent with the order tools: **trajectories** checked in **strict, unordered, superset and subset** modes, arguments compared and ignored, an LLM **trajectory judge**, and one decision tested on its own.\n\nRuns locally with langsmith.evaluate(upload_results=False); steps that need LangSmith's servers run when Nimbus has its own key.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m04_evaluation",
+     "symbol": "match_modes",
+     "why": "agentevals.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.datasets",
+   "icon": "🗂️",
+   "covers": [
+    "smith.l13"
+   ],
+   "explain": "**Splits**, a **version** hash and tag, examples made **from rated production traces**, a **schema** that rejects a bad example.\n\nRuns locally with langsmith.evaluate(upload_results=False); steps that need LangSmith's servers run when Nimbus has its own key.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.reply_eval",
+     "symbol": "load_examples",
+     "why": "The dataset.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.experiments",
+   "icon": "🧪",
+   "covers": [
+    "smith.l14",
+    "smith.l15"
+   ],
+   "explain": "**evaluate()** with code evaluators, **several scores** and a **category**, an evaluator **inside the run**, a **summary evaluator**, experiment names.\n\nRuns locally with langsmith.evaluate(upload_results=False); steps that need LangSmith's servers run when Nimbus has its own key.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.reply_eval",
+     "symbol": "facts",
+     "why": "A code evaluator.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.judges",
+   "icon": "⚖️",
+   "covers": [
+    "smith.l16"
+   ],
+   "explain": "A **correctness judge checked** against six answers with known grades, a **prebuilt** rubric and **Nimbus's own**.\n\nRuns locally with langsmith.evaluate(upload_results=False); steps that need LangSmith's servers run when Nimbus has its own key.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m04_evaluation",
+     "symbol": "agreement",
+     "why": "Checking the judge.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.compare",
+   "icon": "🆚",
+   "covers": [
+    "smith.l17"
+   ],
+   "explain": "The production prompt on the **default** and the **small** model: **regressions per example**, cost and speed, **repetitions**, a **pairwise** judge with the order randomized.\n\nRuns locally with langsmith.evaluate(upload_results=False); steps that need LangSmith's servers run when Nimbus has its own key.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.reply_eval",
+     "symbol": "regressions",
+     "why": "Regressions.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.pytest",
+   "icon": "✅",
+   "covers": [
+    "smith.l20"
+   ],
+   "explain": "**@pytest.mark.langsmith** tests that log inputs, outputs, references and feedback, with a judge traced apart.\n\nRuns locally with langsmith.evaluate(upload_results=False); steps that need LangSmith's servers run when Nimbus has its own key.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m04_evaluation",
+     "symbol": "pytest_lab",
+     "why": "The run.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.local-backtest",
+   "icon": "🔁",
+   "covers": [
+    "smith.l21"
+   ],
+   "explain": "An evaluation on **plain objects**, a **quality gate** for CI, and the candidate **backtested** on production's questions.\n\nRuns locally with langsmith.evaluate(upload_results=False); steps that need LangSmith's servers run when Nimbus has its own key.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m04_evaluation",
+     "symbol": "backtest",
+     "why": "Backtesting.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.prompt-hub",
+   "icon": "🏷️",
+   "covers": [
+    "smith.l22"
+   ],
+   "explain": "The support reply prompt in Nimbus's **registry**: commits, the **production tag**, a **pinned** version, model settings, **cached pulls**; the same in LangSmith's Prompt Hub with a key.\n\nRuns locally with langsmith.evaluate(upload_results=False); steps that need LangSmith's servers run when Nimbus has its own key.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.prompts.registry",
+     "symbol": "PromptRegistry",
+     "why": "The registry.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.release",
+   "icon": "🚦",
+   "covers": [
+    "smith.l23"
+   ],
+   "explain": "Production and a candidate on the same dataset; a **gate** that promotes only if nothing got worse; **promotion and rollback** as tag moves.\n\nRuns locally with langsmith.evaluate(upload_results=False); steps that need LangSmith's servers run when Nimbus has its own key.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.reply_eval",
+     "symbol": "gate",
+     "why": "The gate.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.monitoring",
+   "icon": "📈",
+   "covers": [
+    "smith.l24"
+   ],
+   "explain": "Traffic, latency and tokens from production answers; **code checks on every answer** and a **judge on a sample** as feedback; what LangSmith's UI adds.\n\nRuns locally with langsmith.evaluate(upload_results=False); steps that need LangSmith's servers run when Nimbus has its own key.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m04_evaluation",
+     "symbol": "online_by_hand",
+     "why": "Online evaluation by hand.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the improvement loop",
+  "summary": "The support reply runs whatever the registry's production tag points to, and every answer carries the prompt version. Thumbs-down answers become a regression set; a fix is a new commit, evaluated against production on that set plus the smoke tests; it's released only if nothing got worse, by moving the tag, and verified on the live app.",
+  "covers": [
+   "smith.l25"
+  ],
+  "steps": [
+   {
+    "id": "registry",
+    "title": "Registry",
+    "icon": "🏷️",
+    "tagline": "The prompt is data",
+    "explain": "routers/support.py pulls support-reply:production at runtime (cached a minute); push makes commits, tag moves pointers.",
+    "code": [
+     {
+      "module": "nimbus.prompts.registry",
+      "symbol": "PromptRegistry",
+      "why": "The registry.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "With a LangSmith key the same flow runs on the Prompt Hub: push_prompt, pull_prompt, commit tags."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "Code checks first, judges second",
+    "explain": "facts and no_promises on every example, a judge where code can't decide, all through langsmith.evaluate on outputs computed beforehand.",
+    "code": [
+     {
+      "module": "nimbus.support.reply_eval",
+      "symbol": "run_experiment",
+      "why": "Experiments.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.support.reply_eval",
+      "symbol": "facts",
+      "why": "A code check.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Check a new judge against known grades before it gates anything."
+    ]
+   },
+   {
+    "id": "gate",
+    "title": "Gate",
+    "icon": "🚦",
+    "tagline": "Nothing worse, or no release",
+    "explain": "gate() compares per example: any check the production prompt passed and the candidate fails blocks the release.",
+    "code": [
+     {
+      "module": "nimbus.support.reply_eval",
+      "symbol": "gate",
+      "why": "The gate.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Run it in CI on every prompt change; the tag moves only from the pipeline."
+    ]
+   },
+   {
+    "id": "loop",
+    "title": "Loop",
+    "icon": "🔁",
+    "tagline": "Users' 👎 to a released fix",
+    "lab": "prod.improvement-loop",
+    "explain": "The capstone: production answers, users' ratings, a regression set from the 👎, the candidate evaluated, released by a tag move, the complaints asked again.\n\n| Step | Measured on the 12-example support dataset |\n|---|---|\n| Production prompt v1 | 4 of 12 answers got a 👎 (a fact missing). On \"How much is a cold brew?\" it made up a price (\"$4.50\"; the menu says ₹200). |\n| Candidate v2 (policy in the prompt) | facts 0.9 vs 0.6 on the regression set + smoke, but **blocked**: s1 lost a fact the production answer had |\n| Candidate v3 (v2 + apologise first) | facts 1.0, no promises 1.0, nothing got worse: **released** by moving the `production` tag |\n| After release | the live app answered all 4 complaints correctly; 12 of 12 answers now rated 👍 |\n| ministral-8b vs 14b | 1.8× faster (p50 1569 vs 2793 ms), same tokens, facts 58% vs 67%: it broke s1. A pairwise judge still preferred the 8b answers 3 of 3 times, so check judges per example before trusting them. |\n\nv2's average went up (0.6 → 0.9) while s1 got worse: only the per-example gate caught it.",
+    "code": [
+     {
+      "module": "academy.labs.production.m04_evaluation",
+      "symbol": "improvement_loop",
+      "why": "The loop.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Keep every regression example: the next release is tested against it too."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/prompts/registry.py",
+   "role": "Prompts as commits and tags"
+  },
+  {
+   "path": "data/prompts/support-reply.json",
+   "role": "The support reply prompt's history"
+  },
+  {
+   "path": "src/nimbus/support/reply_eval.py",
+   "role": "Dataset, evaluators, experiments, the gate"
+  },
+  {
+   "path": "data/eval/support_reply_dataset.json",
+   "role": "The dataset"
+  },
+  {
+   "path": "tests/test_reply_quality.py",
+   "role": "Quality tests in pytest"
+  },
+  {
+   "path": "src/academy/labs/production/m04_evaluation.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Quality tests (real model)",
+   "cmd": "uv run pytest -m integration tests/test_reply_quality.py"
+  }
+ ]
+}

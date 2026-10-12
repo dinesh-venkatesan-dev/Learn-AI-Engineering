@@ -1,0 +1,318 @@
+{
+ "track": "production",
+ "id": "03",
+ "title": "Tracing & feedback",
+ "summary": "See what the service did, and what users thought of it. Every LangChain and LangGraph run becomes a trace in LangSmith: a tree of runs with inputs, outputs, timing and tokens. The module traces chains, agents and your own code, groups conversations into threads, controls what is traced and how much, keeps private data out, follows one trace across two services, queries traces, speaks OpenTelemetry, and attaches users' ratings and reviewers' scores to the answers they're about. Nimbus traces only with its own key, through a client that anonymizes and samples, and keeps every rating in its own database.",
+ "learn": [
+  "**Traces**: trees of runs from LangChain, LangGraph and @traceable, with run ids, tags and metadata",
+  "**Threads**, and **controlling** tracing: off, another project, local only, sampling",
+  "**Private data**: hide_inputs/outputs, anonymizers, secret rules, process_inputs",
+  "**Distributed tracing**, **querying** traces, and **OpenTelemetry**",
+  "**Feedback** and **annotation queues**: users' ratings and reviewers' scores on runs"
+ ],
+ "flow": "request ─→ run_config(run_id, thread_id, tags, metadata) ─→ chain / agent ─→ runs ─→ tracing client (anonymizer, sampling) ─→ LangSmith\n                                    └─→ answer + run_id ─→ user rates it ─→ POST /feedback ─→ Nimbus DB (+ LangSmith)",
+ "labs": [
+  {
+   "lab": "lc.tracing",
+   "icon": "🧵",
+   "covers": [
+    "lc.l53"
+   ],
+   "explain": "A prompt → model → parser chain traced three ways: **ConsoleCallbackHandler**, the SDK switched on by **environment variables** only, and nested under **@traceable**.\n\nRuns locally: the SDK uploads to a local capture, so you see exactly what would leave the machine. Steps that read from LangSmith's servers need Nimbus's own key (NIMBUS_LANGSMITH_API_KEY, NIMBUS_LANGSMITH_TRACING=true).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m03_tracing",
+     "symbol": "answer_question",
+     "why": "@traceable.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.first-trace",
+   "icon": "👣",
+   "covers": [
+    "smith.l01"
+   ],
+   "explain": "One call with its **run id chosen up front**, the runs it produced as uploaded, **flush()**, and reading it back.\n\nRuns locally: the SDK uploads to a local capture, so you see exactly what would leave the machine. Steps that read from LangSmith's servers need Nimbus's own key (NIMBUS_LANGSMITH_API_KEY, NIMBUS_LANGSMITH_TRACING=true).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m03_tracing",
+     "symbol": "run_id_up_front",
+     "why": "The run id.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.agents",
+   "icon": "🕵️",
+   "covers": [
+    "smith.l02"
+   ],
+   "explain": "A support agent's **whole tool loop** in one trace: run types, and **run name, tags and metadata** on every run.\n\nRuns locally: the SDK uploads to a local capture, so you see exactly what would leave the machine. Steps that read from LangSmith's servers need Nimbus's own key (NIMBUS_LANGSMITH_API_KEY, NIMBUS_LANGSMITH_TRACING=true).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m03_tracing",
+     "symbol": "traced_agent",
+     "why": "The agent.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.traceable",
+   "icon": "🏷️",
+   "covers": [
+    "smith.l03"
+   ],
+   "explain": "A ticket handler with **@traceable**: run types, **process_inputs/outputs**, metadata from inside, a **trace()** block, an **error** and an **attachment**.\n\nRuns locally: the SDK uploads to a local capture, so you see exactly what would leave the machine. Steps that read from LangSmith's servers need Nimbus's own key (NIMBUS_LANGSMITH_API_KEY, NIMBUS_LANGSMITH_TRACING=true).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m03_tracing",
+     "symbol": "handle_ticket",
+     "why": "The handler.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.threads",
+   "icon": "💬",
+   "covers": [
+    "smith.l04"
+   ],
+   "explain": "Two turns with one **thread_id**, and a LangGraph run whose checkpointer thread_id lands in the metadata.\n\nRuns locally: the SDK uploads to a local capture, so you see exactly what would leave the machine. Steps that read from LangSmith's servers need Nimbus's own key (NIMBUS_LANGSMITH_API_KEY, NIMBUS_LANGSMITH_TRACING=true).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m03_tracing",
+     "symbol": "conversation",
+     "why": "A thread.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.control",
+   "icon": "🎛️",
+   "covers": [
+    "smith.l05"
+   ],
+   "explain": "Tracing **off** for a block, **another project**, **enabled='local'** (and what it doesn't keep local), and **sampling** a quarter of 40 traces.\n\nRuns locally: the SDK uploads to a local capture, so you see exactly what would leave the machine. Steps that read from LangSmith's servers need Nimbus's own key (NIMBUS_LANGSMITH_API_KEY, NIMBUS_LANGSMITH_TRACING=true).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m03_tracing",
+     "symbol": "local_only",
+     "why": "Local only.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.privacy",
+   "icon": "🙈",
+   "covers": [
+    "smith.l06"
+   ],
+   "explain": "A message with an email, a phone and a card traced **as is**, with **hide_inputs/outputs** and with Nimbus's **anonymizer**; **secret rules**; **process_inputs**.\n\nRuns locally: the SDK uploads to a local capture, so you see exactly what would leave the machine. Steps that read from LangSmith's servers need Nimbus's own key (NIMBUS_LANGSMITH_API_KEY, NIMBUS_LANGSMITH_TRACING=true).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.observability.tracing",
+     "symbol": "pii_anonymizer",
+     "why": "The rules.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.distributed",
+   "icon": "🕸️",
+   "covers": [
+    "smith.l08"
+   ],
+   "explain": "The support service calls a menu service with **tracing headers**; the menu service **continues the trace**: one tree, two processes.\n\nRuns locally: the SDK uploads to a local capture, so you see exactly what would leave the machine. Steps that read from LangSmith's servers need Nimbus's own key (NIMBUS_LANGSMITH_API_KEY, NIMBUS_LANGSMITH_TRACING=true).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m03_tracing",
+     "symbol": "call_the_menu_service",
+     "why": "The caller.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.query",
+   "icon": "🔎",
+   "covers": [
+    "smith.l09"
+   ],
+   "explain": "**list_runs** queries for failures, slow calls and tagged traces, the **filter language**, **select=** and the newer **runs.query**.\n\nRuns locally: the SDK uploads to a local capture, so you see exactly what would leave the machine. Steps that read from LangSmith's servers need Nimbus's own key (NIMBUS_LANGSMITH_API_KEY, NIMBUS_LANGSMITH_TRACING=true).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m03_tracing",
+     "symbol": "failures_and_slow_calls",
+     "why": "The queries.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.otel",
+   "icon": "📡",
+   "covers": [
+    "smith.l10"
+   ],
+   "explain": "Nested spans written with **plain OpenTelemetry** and the attributes LangSmith understands; then **LangChain emitting OTel spans** itself (LANGSMITH_TRACING_MODE=otel).\n\nRuns locally: the SDK uploads to a local capture, so you see exactly what would leave the machine. Steps that read from LangSmith's servers need Nimbus's own key (NIMBUS_LANGSMITH_API_KEY, NIMBUS_LANGSMITH_TRACING=true).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m03_tracing",
+     "symbol": "otel_spans",
+     "why": "OTel spans.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.feedback",
+   "icon": "👍",
+   "covers": [
+    "smith.l11"
+   ],
+   "explain": "An answer's **run id**, three kinds of **feedback** on it, the **Nimbus API storing** a user's rating, and the server-side parts (configs, presigned URLs, reading back).\n\nRuns locally: the SDK uploads to a local capture, so you see exactly what would leave the machine. Steps that read from LangSmith's servers need Nimbus's own key (NIMBUS_LANGSMITH_API_KEY, NIMBUS_LANGSMITH_TRACING=true).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.routers.feedback",
+     "symbol": "rate",
+     "why": "Ratings in our database.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.annotation",
+   "icon": "📝",
+   "covers": [
+    "smith.l12"
+   ],
+   "explain": "A **review queue** with a rubric, fresh answers added, reviewers' scores read back as feedback.\n\nRuns locally: the SDK uploads to a local capture, so you see exactly what would leave the machine. Steps that read from LangSmith's servers need Nimbus's own key (NIMBUS_LANGSMITH_API_KEY, NIMBUS_LANGSMITH_TRACING=true).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m03_tracing",
+     "symbol": "review_queue",
+     "why": "The queue.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: tracing Nimbus safely",
+  "summary": "Nothing is traced unless Nimbus has its own LangSmith key; then every trace goes through a client that anonymizes emails, phones, cards and secrets and keeps a sample. Answers carry their run id, and users' ratings are stored in Nimbus's database and attached to the traces.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "guard",
+    "title": "Guard",
+    "icon": "🔒",
+    "tagline": "No key, no upload",
+    "explain": "guard_uploads runs before any LangSmith client exists: without Nimbus's own key the SDK's endpoint is pinned to this machine, whatever else the environment says.",
+    "code": [
+     {
+      "module": "nimbus.observability.tracing",
+      "symbol": "guard_uploads",
+      "why": "The guard.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Keep the key in ai-course/.env (NIMBUS_LANGSMITH_API_KEY), never in code or in a shared .env."
+    ]
+   },
+   {
+    "id": "client",
+    "title": "Client",
+    "icon": "🧰",
+    "tagline": "Anonymized and sampled",
+    "explain": "tracing_client: the PII and secret rules, langsmith_sampling_rate, the project; run_config gives every answer a run id, thread id, tags and metadata.",
+    "code": [
+     {
+      "module": "nimbus.observability.tracing",
+      "symbol": "tracing_client",
+      "why": "The client.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.observability.tracing",
+      "symbol": "run_config",
+      "why": "Per-call config.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Add a rule for every new kind of personal data before it reaches a prompt."
+    ]
+   },
+   {
+    "id": "feedback",
+    "title": "Feedback",
+    "icon": "👍",
+    "tagline": "Ratings in our database",
+    "explain": "POST /feedback stores a rating against a run id for the signed-in user, and forwards it to LangSmith in the background when tracing is on.",
+    "code": [
+     {
+      "module": "nimbus.api.routers.feedback",
+      "symbol": "rate",
+      "why": "The endpoint.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Review 👎 answers weekly: they are the next evaluation examples (Module 4)."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "What leaves the machine",
+    "lab": "prod.tracing-eval",
+    "explain": "Ten conversations with personal data, traced with a default client and Nimbus's client, captured locally.\n\n| | emails uploaded (of 10) | card numbers uploaded (of 10) | traces kept (of 40) |\n|---|---|---|---|\n| default client | 10 | 10 | 40 |\n| **Nimbus tracing client** | **0** | **0** | **8** |\n\nTen support conversations carried an email address, a phone number and a card number each. Traced with a default client, every email and card number was in the upload. With Nimbus's client (the PII anonymizer, sampling a quarter of traces) none was, and 8 of 40 traces were kept, a share to tune to the traffic. Tracing added 0.64 ms per call at p50, because uploads run in a background thread. Everything was measured against a local capture: nothing was sent to LangSmith. The labs also found two things to design around. LangChain runs inside `tracing_context(enabled=\"local\")` are still sent by the default client, so Nimbus pins the default endpoint to this machine unless it has its own key. And a trace continued from another service's headers uses the default client unless you configure one.",
+    "code": [
+     {
+      "module": "academy.labs.production.m03_tracing",
+      "symbol": "pii_in_uploads",
+      "why": "The check.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Run this check in CI: a new rule or prompt mustn't put personal data back into traces."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/observability/tracing.py",
+   "role": "The guard, the client, the rules, run config"
+  },
+  {
+   "path": "src/nimbus/observability/capture.py",
+   "role": "A local capture of what would be uploaded"
+  },
+  {
+   "path": "src/nimbus/api/routers/feedback.py",
+   "role": "Users' ratings"
+  },
+  {
+   "path": "src/academy/labs/production/m03_tracing.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Trace to LangSmith (your own key)",
+   "cmd": "echo 'NIMBUS_LANGSMITH_API_KEY=...\nNIMBUS_LANGSMITH_TRACING=true' >> ai-course/.env"
+  }
+ ]
+}

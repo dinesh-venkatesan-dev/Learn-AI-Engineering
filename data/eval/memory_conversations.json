@@ -1,0 +1,14 @@
+[
+ {"id": "f1", "kind": "follow-up", "customer_id": "c-1042", "turns": [["a", "What's the status of NC-20417?"], ["a", "How many loyalty points did it earn?"]], "answer_numbers": [130], "not_numbers": [72]},
+ {"id": "f2", "kind": "follow-up", "customer_id": "c-6060", "turns": [["a", "I'd like to return order NC-90112, it's still unopened."], ["a", "How much will I get back?"]], "answer_numbers": [650]},
+ {"id": "f3", "kind": "follow-up", "customer_id": "c-3301", "turns": [["a", "Please pause my subscription for 2 weeks."], ["a", "Actually, make it 4 weeks instead."]], "actions": ["pause_subscription(4 weeks)"]},
+ {"id": "f4", "kind": "follow-up", "customer_id": "c-1042", "turns": [["a", "What's the status of NC-12093?"], ["a", "Can I return it? I haven't opened it."]], "answer_any": ["14-day", "14 day", "14 days", "window"]},
+ {"id": "f5", "kind": "follow-up", "customer_id": "c-5005", "turns": [["a", "Where is my order?"], ["a", "When did I place it?"]], "answer_any": ["15 march", "march 15", "2026-03-15", "15th march", "15th of march", "march 15th"]},
+ {"id": "x1", "kind": "recall", "customer_id": "c-1042", "turns": [["a", "Please remember I'm lactose intolerant, it matters when I visit the café."], ["b", "Which café drinks would suit me?"]], "answer_any": ["oat latte", "cold brew"]},
+ {"id": "x2", "kind": "recall", "customer_id": "c-6060", "turns": [["a", "Just so you know, I always want my deliveries left with the building's security desk."], ["b", "Where will my next delivery be left?"]], "answer_any": ["security"]},
+ {"id": "x3", "kind": "recall", "customer_id": "c-3301", "turns": [["a", "I only drink decaf these days, please keep that in mind."], ["b", "Can you suggest a coffee for me?"]], "answer_any": ["decaf"]},
+ {"id": "x4", "kind": "recall", "customer_id": "c-8080", "turns": [["a", "I'm vegan, please remember that."], ["b", "What can I have at the café?"]], "answer_any": ["oat latte", "cold brew", "vegan brownie"]},
+ {"id": "n1", "kind": "noise", "customer_id": "c-2210", "turns": [["a", "Thanks, have a nice day!"]]},
+ {"id": "n2", "kind": "noise", "customer_id": "c-5005", "turns": [["a", "Where is my order NC-78123?"]]},
+ {"id": "n3", "kind": "noise", "customer_id": "c-7007", "turns": [["a", "I'm annoyed that my order hasn't shipped yet."]]}
+]

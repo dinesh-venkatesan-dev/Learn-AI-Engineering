@@ -1,0 +1,300 @@
+{
+ "track": "rag",
+ "id": "04",
+ "title": "Chunking",
+ "summary": "Search compares a question with **chunks**, so how documents are cut decides what can be found. A chunk that is too big is about everything; one that is too small loses its subject (*\"It is roasted dark… costs 650 rupees\"*: what is?). This module cuts the Nimbus corpus by characters, by tokens, by structure and by meaning, gives chunks back the context they lost, and measures six configurations on all 45 questions. Production ships the winner: **recursive 300/50 with contextual headers**, from hit@5 0.73 to 0.89.",
+ "learn": [
+  "**Splitting by characters**: fixed size, paragraphs, recursive, overlap, and chunk size measured on real questions",
+  "**Tokens**: how models count, the embedding model's silent 512-token limit, token-sized splitters",
+  "**Structure-aware splitting**: Markdown and HTML headings as metadata, two-stage splitting, code at definitions",
+  "**Semantic chunking**: break where neighbouring sentences stop being alike, and where that goes wrong",
+  "**Chunk enrichment**: contextual headers (free) and model-written context (contextual retrieval)"
+ ],
+ "flow": "cleaned Documents (per file)\n   │  strategy: recursive (size first) | sections (headings first, then size)\n   ▼\nchunks ≤ chunk_size characters, chunk_overlap repeated, metadata kept (+ section, start_index)\n   │  context: none | headers \"[handbook.md › Leave policy]\" | llm \"This chunk describes …\"\n   ▼\ntext that gets embedded",
+ "labs": [
+  {
+   "lab": "rag.splitters",
+   "icon": "✂️",
+   "covers": [
+    "lc.l41.1",
+    "lc.l41.2",
+    "lc.l41.3",
+    "lc.l41.4",
+    "rag.l19"
+   ],
+   "explain": "Three splitters on the handbook and product guide: **fixed size** (every N characters), **on paragraphs** (natural boundaries, uneven sizes), and **recursive** (paragraphs, then lines, then words, until each piece fits). Change the size and overlap and watch words get cut, sizes spread, and what search finds. The size sweep at the bottom scores four sizes on the whole corpus and all 45 questions.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.chunking",
+     "symbol": "build_splitter",
+     "why": "Production's splitter.",
+     "notes": [
+      {
+       "match": "SEPARATORS",
+       "text": "Headings first, then paragraphs, lines, sentences, words."
+      },
+      {
+       "match": "add_start_index=True",
+       "text": "Where each chunk starts in its document."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.tokens",
+   "icon": "🔢",
+   "covers": [
+    "rag.l20"
+   ],
+   "explain": "Models count **tokens**, not characters: about 4 characters per English token, many more tokens for codes and other scripts. The embedding model reads at most 512 tokens and **silently ignores the rest**. The lab proves it (a long chunk with an extra sentence at the end gets the identical vector) and compares two token-sized splitters.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m04_chunking",
+     "symbol": "the_silent_limit",
+     "why": "The 512-token limit, demonstrated.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.structure",
+   "icon": "🏗️",
+   "covers": [
+    "lc.l41.5",
+    "rag.l21"
+   ],
+   "explain": "Documents say where their parts begin: Markdown and HTML **headings**, **class** and **def** lines in code. Split there first, then by size, and keep the headings as metadata.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.chunking",
+     "symbol": "split_by_sections",
+     "why": "Production's two-stage splitter.",
+     "notes": [
+      {
+       "match": "header_splitter.split_text(doc.page_content)",
+       "text": "Stage 1: one piece per section."
+      },
+      {
+       "match": "return split_documents(sections, splitter, min_chars)",
+       "text": "Stage 2: long sections split by size; a chunk never spans two sections."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.semantic-chunking",
+   "icon": "🧠",
+   "covers": [
+    "rag.l22"
+   ],
+   "explain": "Text with three topics and no headings: embed each sentence, measure how alike each one is to the next, and **break where similarity drops**. Compared with fixed-size chunks on topic mixing and sentences cut in half. Move the percentile to see the chunks merge and split.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m04_chunking",
+     "symbol": "break_at_drops",
+     "why": "The breaking rule.",
+     "notes": [
+      {
+       "match": "threshold = np.percentile(similarities, percentile)",
+       "text": "The lowest similarities count as topic changes."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.enrichment",
+   "icon": "🏷️",
+   "covers": [
+    "rag.l23"
+   ],
+   "explain": "Small chunks lose their subject: *\"A 250 g bag costs 650 rupees.\"* doesn't say which blend. The lab ranks that chunk for the question three ways: **plain**, with a **contextual header** naming its source and section (free), and with a **sentence a model wrote** situating it in the document (contextual retrieval: one model call per chunk at indexing time, cached).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.chunking",
+     "symbol": "add_context_headers",
+     "why": "Production: source and section in front of each chunk.",
+     "notes": [
+      {
+       "match": "f\"[{where}]\\n{c.page_content}\"",
+       "text": "Embedded with the chunk; costs nothing."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.chunking",
+     "symbol": "add_llm_context",
+     "why": "Production (optional): contextual retrieval.",
+     "notes": [
+      {
+       "match": "CONTEXT_CACHE",
+       "text": "Cached by (document, chunk) hash: re-indexing an unchanged corpus costs no calls."
+      },
+      {
+       "match": "document = documents[c.metadata[\"source\"]][:12_000]",
+       "text": "The whole document goes in every prompt: cap it."
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus chunking v2",
+  "summary": "Chunking becomes configuration: size, overlap, strategy (recursive or sections first) and context (none, headers or model-written). Six configurations were measured on all 45 questions with loaders v3; the winner is the new default: **recursive, 300 characters, overlap 50, contextual headers**. nDCG@5 0.63 → 0.73, hit@5 0.73 → 0.89, and about 15% fewer tokens sent per question.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "split",
+    "title": "Split",
+    "icon": "✂️",
+    "tagline": "Recursive or sections first",
+    "explain": "`make_chunks()` cuts every file with the configured strategy. Recursive (the default) splits at the largest boundary that fits: headings, paragraphs, lines, sentences, words. Sections first splits at Markdown headings and records the heading path in `metadata['section']`; on this corpus of short documents it didn't help, so it stays an option.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.chunking",
+      "symbol": "make_chunks",
+      "why": "One entry point for strategy and context.",
+      "notes": [
+       {
+        "match": "split = split_by_sections if strategy == \"sections\" else split_documents",
+        "text": "The strategy is a setting."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.ingestion.chunking",
+      "symbol": "split_documents",
+      "why": "Chunks keep metadata.",
+      "notes": [
+       {
+        "match": "c.metadata[\"chunk_index\"] = position",
+        "text": "Position within the file."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Re-measure when the corpus changes shape: long manuals with deep headings favour sections first; short FAQs don't."
+    ]
+   },
+   {
+    "id": "context",
+    "title": "Context",
+    "icon": "🏷️",
+    "tagline": "Headers by default, model context optional",
+    "explain": "Each chunk is embedded with `[source › section]` in front: the cheapest fix for chunks that lost their subject, and it helped every chunk size. Contextual retrieval (a model sentence per chunk) is behind `NIMBUS_CHUNK_CONTEXT=llm`: it fixed the product-price question in the lab but scored lower than headers on the whole corpus, at a model call per chunk.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.chunking",
+      "symbol": "add_context_headers",
+      "why": "Headers.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.ingestion.chunking",
+      "symbol": "add_llm_context",
+      "why": "Model context, cached.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Show users the chunk without its header or context sentence: those are for search, not for reading.",
+     "Model-written context can invent things (one sentence said '[Company Name]'): sample and review them before enabling it."
+    ]
+   },
+   {
+    "id": "configure",
+    "title": "Configure",
+    "icon": "⚙️",
+    "tagline": "300/50, recursive, headers",
+    "explain": "The defaults are the measured winner. The pipeline reads them from settings, so a different corpus can be tuned with environment variables and re-measured with the evaluation below.",
+    "code": [
+     {
+      "module": "nimbus.config",
+      "symbol": "Settings",
+      "why": "Settings.",
+      "notes": [
+       {
+        "match": "chunk_size: int = Field(300",
+        "text": "The new default size."
+       },
+       {
+        "match": "chunk_context: Literal[\"none\", \"headers\", \"llm\"] = Field(",
+        "text": "Context in front of each chunk."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.ingestion.pipeline",
+      "symbol": "IngestionPipeline.run",
+      "why": "The pipeline.",
+      "notes": [
+       {
+        "match": "model = get_chat_model(s) if s.chunk_context == \"llm\" else None",
+        "text": "A model client only when contextual retrieval is on."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Changing chunking changes every chunk id: the next ingestion replaces the whole index (the record manager deletes the old chunks)."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "Six configurations, 45 questions",
+    "lab": "rag.chunking-eval",
+    "explain": "Loaders v3, the same embeddings and questions; only chunking changes.\n\n| configuration | hit@1 | hit@5 | MRR | nDCG@5 | ≈ tokens / question |\n|---|---|---|---|---|---|\n| v1 · recursive 500/80 | 0.53 | 0.73 | 0.627 | 0.63 | 271 |\n| recursive 300/50 | 0.51 | 0.84 | 0.637 | 0.67 | 204 |\n| sections 300/50 | 0.49 | 0.84 | 0.626 | 0.66 | 190 |\n| recursive 500/80 + headers | 0.62 | 0.80 | 0.707 | 0.71 | 298 |\n| **recursive 300/50 + headers** | 0.60 | **0.89** | 0.705 | **0.73** | 231 |\n| recursive 300/50 + model context | 0.51 | 0.87 | 0.661 | 0.70 | 387 |",
+    "code": [
+     {
+      "module": "academy.labs.rag.m04_chunking",
+      "symbol": "evaluate_chunking",
+      "why": "The six configurations.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Pick by the metric your next stage needs: reranking (Module 6) needs the answer in the top k (hit@k), a model reading only the first chunk needs hit@1.",
+     "Keep this evaluation in CI for chunking changes: a 'harmless' size tweak moved hit@5 by 0.1 here."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/rag/ingestion/chunking.py",
+   "role": "Splitter, sections-first splitting, context headers, contextual retrieval, make_chunks"
+  },
+  {
+   "path": "src/nimbus/config.py",
+   "role": "chunk_size, chunk_overlap, chunk_strategy, chunk_context"
+  },
+  {
+   "path": "src/academy/labs/rag/m04_chunking.py",
+   "role": "The labs"
+  },
+  {
+   "path": "tests/test_chunking.py",
+   "role": "Size limits, metadata, sections, headers"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Ingest with chunking v2 (the default)",
+   "cmd": "uv run nimbus rag ingest"
+  },
+  {
+   "label": "Try contextual retrieval",
+   "cmd": "NIMBUS_CHUNK_CONTEXT=llm uv run nimbus rag ingest"
+  },
+  {
+   "label": "Chunking tests",
+   "cmd": "uv run pytest tests/test_chunking.py"
+  }
+ ]
+}

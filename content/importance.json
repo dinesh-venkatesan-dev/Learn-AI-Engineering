@@ -1,0 +1,330 @@
+{
+ "about": "How much each topic matters for a production-grade LLM application. Modules are rated with a reason; lessons default to 2 unless listed.",
+ "scale": {
+  "3": "Essential: every production LLM app needs it",
+  "2": "Important: often needed, or depends on your use case",
+  "1": "Good to know: specialised, internals, or alternatives you rarely pick"
+ },
+ "default_lesson_stars": 2,
+ "modules": {
+  "langchain/01": {
+   "stars": 3,
+   "why": "Every LLM call goes through a chat model, messages, prompts and structured output."
+  },
+  "langchain/02": {
+   "stars": 2,
+   "why": "LCEL chains are common for fixed pipelines; agents and graphs replace them for anything dynamic."
+  },
+  "langchain/03": {
+   "stars": 3,
+   "why": "Tools are how a model reads your data and acts; schemas and error handling decide reliability."
+  },
+  "langchain/04": {
+   "stars": 3,
+   "why": "create_agent is the standard agent loop: structured results, context limits and runtime context."
+  },
+  "langchain/05": {
+   "stars": 3,
+   "why": "Retries, limits, guardrails and context control are what make an agent safe to ship."
+  },
+  "rag/01": {
+   "stars": 3,
+   "why": "The whole pipeline end to end, and the scorecard every later change is judged by."
+  },
+  "rag/02": {
+   "stars": 3,
+   "why": "Real company data is PDFs, Office files, HTML and email; whatever you can't load can't be answered."
+  },
+  "rag/03": {
+   "stars": 2,
+   "why": "Needed when you have scans, photos or forms; skip it if all your documents have a text layer."
+  },
+  "rag/04": {
+   "stars": 3,
+   "why": "Chunking is one of the biggest levers on retrieval quality, and it's cheap to tune."
+  },
+  "rag/05": {
+   "stars": 3,
+   "why": "Picking the embedding model and store, and keeping the index in sync, is daily production work."
+  },
+  "rag/06": {
+   "stars": 3,
+   "why": "Filters, hybrid search and reranking are where most production RAG quality gains come from."
+  },
+  "rag/07": {
+   "stars": 3,
+   "why": "Grounded answers with citations and follow-up questions are what users actually see."
+  },
+  "rag/08": {
+   "stars": 1,
+   "why": "Agentic, corrective, graph and multimodal RAG solve specific problems; add them only when measurements show the need."
+  },
+  "rag/09": {
+   "stars": 3,
+   "why": "Evaluation, security, cost and latency: the difference between a demo and a product."
+  },
+  "agents/01": {
+   "stars": 3,
+   "why": "State, nodes, edges and reducers are the base of every LangGraph app."
+  },
+  "agents/02": {
+   "stars": 2,
+   "why": "Branches, loops and parallel work; the advanced parts (Send, Pregel) matter for complex graphs."
+  },
+  "agents/03": {
+   "stars": 3,
+   "why": "Most production LLM systems are predictable workflows, not free-running agents."
+  },
+  "agents/04": {
+   "stars": 3,
+   "why": "A tool-calling agent you fully control, with streaming to the UI."
+  },
+  "agents/05": {
+   "stars": 3,
+   "why": "Conversations and long jobs must survive restarts; durable checkpoints are required in production."
+  },
+  "agents/06": {
+   "stars": 2,
+   "why": "Required wherever an agent takes risky actions (payments, emails, deletes)."
+  },
+  "agents/07": {
+   "stars": 1,
+   "why": "Multi-agent systems add cost and failure modes; reach for them only when one agent clearly isn't enough."
+  },
+  "agents/08": {
+   "stars": 3,
+   "why": "Config per user, async, retries, timeouts and tests: what keeps a graph running for real users."
+  },
+  "agents/09": {
+   "stars": 1,
+   "why": "Deep agents suit long open-ended research or ops tasks; most apps don't need them."
+  },
+  "agents/10": {
+   "stars": 1,
+   "why": "Memory, skills and harness control for deep agents: specialised."
+  },
+  "mcp/01": {
+   "stars": 2,
+   "why": "Understand the protocol before relying on other teams' MCP servers."
+  },
+  "mcp/02": {
+   "stars": 2,
+   "why": "Build servers when you expose tools to several AI apps; tools in depth matter most."
+  },
+  "mcp/03": {
+   "stars": 2,
+   "why": "Using MCP tools from LangChain and LangGraph agents: common integration work."
+  },
+  "mcp/04": {
+   "stars": 2,
+   "why": "Auth, authorization and security are mandatory once an MCP server is remote."
+  },
+  "data/01": {
+   "stars": 2,
+   "why": "Text-to-SQL with safe execution: essential if your users ask questions about tables."
+  },
+  "data/02": {
+   "stars": 2,
+   "why": "Agents vs workflows for SQL, approvals and accuracy evals."
+  },
+  "data/03": {
+   "stars": 1,
+   "why": "Analytics extras: pandas, charts, semantic layer, files."
+  },
+  "fastapi/01": {
+   "stars": 3,
+   "why": "Typed, validated, documented endpoints are how every LLM service is exposed."
+  },
+  "fastapi/02": {
+   "stars": 3,
+   "why": "Streaming and background work are core to LLM APIs (long, slow responses)."
+  },
+  "fastapi/03": {
+   "stars": 3,
+   "why": "Authentication and tests are non-negotiable for a public API."
+  },
+  "fastapi/04": {
+   "stars": 3,
+   "why": "Turning an agent into a service: SSE, concurrency, durable threads, background jobs."
+  },
+  "production/01": {
+   "stars": 3,
+   "why": "Providers fail and cost money: timeouts, retries, fallbacks, budgets and rate limits."
+  },
+  "production/02": {
+   "stars": 2,
+   "why": "Big savings for repeated questions, but semantic caches can serve wrong answers if tuned badly."
+  },
+  "production/03": {
+   "stars": 3,
+   "why": "Without tracing you can't debug or explain a single bad answer."
+  },
+  "production/04": {
+   "stars": 3,
+   "why": "Datasets, experiments and online evals are how you change prompts and models safely."
+  },
+  "production/05": {
+   "stars": 3,
+   "why": "Containers, configuration, observability, CI and safe releases."
+  },
+  "production/06": {
+   "stars": 2,
+   "why": "Kubernetes is common for larger deployments; many teams use simpler managed hosting."
+  },
+  "production/07": {
+   "stars": 2,
+   "why": "Ingress, HTTPS, autoscaling and progressive delivery once you're on Kubernetes."
+  }
+ },
+ "lessons": {
+  "lc.l01": 3,
+  "lc.l02": 3,
+  "lc.l04": 3,
+  "lc.l06": 3,
+  "lc.l07": 3,
+  "lc.l08": 3,
+  "lc.l15": 3,
+  "lc.l17": 3,
+  "lc.l18": 3,
+  "lc.l20": 3,
+  "lc.l21": 3,
+  "lc.l22": 3,
+  "lc.l24": 3,
+  "lc.l25": 3,
+  "lc.l26": 3,
+  "lc.l32": 3,
+  "lc.l34": 3,
+  "lc.l35": 3,
+  "lc.l40": 3,
+  "lc.l41": 3,
+  "lc.l42": 3,
+  "lc.l43": 3,
+  "lc.l44": 3,
+  "lc.l45": 3,
+  "lc.l53": 3,
+  "lc.l54": 3,
+  "lc.l56": 3,
+  "lc.l58": 3,
+  "lc.l59": 3,
+  "lc.l60": 3,
+  "lc.l61": 3,
+  "rag.l04": 3,
+  "rag.l05": 3,
+  "rag.l08": 3,
+  "rag.l19": 3,
+  "rag.l21": 3,
+  "rag.l24": 3,
+  "rag.l28": 3,
+  "rag.l29": 3,
+  "rag.l30": 3,
+  "rag.l31": 3,
+  "rag.l32": 3,
+  "rag.l34": 3,
+  "rag.l36": 3,
+  "rag.l40": 3,
+  "rag.l41": 3,
+  "rag.l42": 3,
+  "rag.l50": 3,
+  "rag.l51": 3,
+  "rag.l52": 3,
+  "rag.l53": 3,
+  "lg.l02": 3,
+  "lg.l03": 3,
+  "lg.l04": 3,
+  "lg.l05": 3,
+  "lg.l07": 3,
+  "lg.l21": 3,
+  "lg.l22": 3,
+  "lg.l25": 3,
+  "lg.l27": 3,
+  "lg.l28": 3,
+  "lg.l32": 3,
+  "lg.l34": 3,
+  "lg.l35": 3,
+  "lg.l45": 3,
+  "lg.l46": 3,
+  "lg.l47": 3,
+  "lg.l49": 3,
+  "mcp.l02": 3,
+  "mcp.l05": 3,
+  "mcp.l14": 3,
+  "mcp.l20": 3,
+  "mcp.l21": 3,
+  "mcp.l24": 3,
+  "smith.l01": 3,
+  "smith.l02": 3,
+  "smith.l03": 3,
+  "smith.l06": 3,
+  "smith.l07": 3,
+  "smith.l11": 3,
+  "smith.l13": 3,
+  "smith.l14": 3,
+  "smith.l16": 3,
+  "smith.l17": 3,
+  "smith.l19": 3,
+  "smith.l24": 3,
+  "api.l01": 3,
+  "api.l02": 3,
+  "api.l03": 3,
+  "api.l04": 3,
+  "api.l05": 3,
+  "api.l06": 3,
+  "api.l08": 3,
+  "api.l12": 3,
+  "api.l15": 3,
+  "api.l16": 3,
+  "prod.l01": 3,
+  "prod.l02": 3,
+  "prod.l03": 3,
+  "prod.l04": 3,
+  "prod.l06": 3,
+  "prod.l07": 3,
+  "prod.l08": 3,
+  "prod.l09": 3,
+  "prod.l10": 3,
+  "prod.l11": 3,
+  "prod.l13": 3,
+  "prod.l14": 3,
+  "data.l02": 3,
+  "data.l03": 3,
+  "data.l04": 3,
+  "data.l09": 3,
+  "deploy.l02": 3,
+  "deploy.l06": 3,
+  "deploy.l07": 3,
+  "deploy.l08": 3,
+  "deploy.l17": 3,
+  "new.l01": 3,
+  "lc.l05": 1,
+  "lc.l10": 1,
+  "lc.l19": 1,
+  "rag.l22": 1,
+  "rag.l26": 1,
+  "rag.l27": 1,
+  "rag.l35": 1,
+  "rag.l39": 1,
+  "rag.l46": 1,
+  "rag.l47": 1,
+  "rag.l48": 1,
+  "lg.l13": 1,
+  "lg.l14": 1,
+  "lg.l26": 1,
+  "lg.l29": 1,
+  "lg.l36": 1,
+  "lg.l42": 1,
+  "lg.l43": 1,
+  "lg.l44": 1,
+  "mcp.l04": 1,
+  "mcp.l07": 1,
+  "mcp.l09": 1,
+  "mcp.l10": 1,
+  "mcp.l13": 1,
+  "mcp.l15": 1,
+  "deep.l11": 1,
+  "deep.l17": 1,
+  "api.l13": 1,
+  "deploy.l10": 1,
+  "deploy.l14": 1,
+  "new.l02": 3
+ }
+}

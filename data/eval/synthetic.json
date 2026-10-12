@@ -1,0 +1,104 @@
+[
+ {
+  "question": "How long does the training program last for new baristas at Nimbus Coffee before they can work independently?",
+  "answer": "2 weeks",
+  "evidence": "Every new barista completes a **2-week training programme** before working a shift alone.",
+  "source": "barista_academy.md"
+ },
+ {
+  "question": "What are the operating hours for Nimbus Coffee in Indiranagar, and are there any exceptions on weekends?",
+  "answer": "The café is open daily from 7:00 to 22:00, with extended hours (until 23:00) on Fridays and Saturdays.",
+  "evidence": "Open daily 7:00 to 22:00, one hour later than other cafés on Fridays and Saturdays.",
+  "source": "cafe_indiranagar.html"
+ },
+ {
+  "question": "What are the operating hours for Nimbus Coffee at Park Street, Kolkata, and is it open every day of the week?",
+  "answer": "Open daily from 7:00 AM to 9:00 PM, including Sundays with live music in the evenings.",
+  "evidence": "Open daily 7:00 to 21:00. Live music on Sunday evenings.",
+  "source": "cafe_park_street.html"
+ },
+ {
+  "question": "How long do Nimbus Beans loyalty points last before they expire?",
+  "answer": "12 months after they are earned.",
+  "evidence": "Points expire 12 months after they are earned.",
+  "source": "faq.html"
+ },
+ {
+  "question": "I’m interested in opening a Nimbus Coffee café, but I live outside of India. Can I do this through a franchise opportunity?",
+  "answer": "Yes, you can open a Nimbus café outside India through a franchise partnership.",
+  "evidence": "Nimbus works with franchise partners for cafés outside India.",
+  "source": "franchise_faq.md"
+ },
+ {
+  "question": "Hi, I’m checking our latest coffee bean prices—what’s the new cost per kilogram for Arabica Cherry beans starting July 1, 2026?",
+  "answer": "392 per kilogram",
+  "evidence": "grade: Arabica Cherry; old_price_per_kg: 360; new_price_per_kg: 392",
+  "source": "green_valley_price_notice.eml"
+ },
+ {
+  "question": "What should I do if I receive an email that I suspect might be a phishing attempt?",
+  "answer": "Forward it to **security@nimbus.example** and then delete it.",
+  "evidence": "Suspected phishing emails must be forwarded to **security@nimbus.example** and then deleted.",
+  "source": "it_security_policy.md"
+ },
+ {
+  "question": "Hi, I placed an order (NC-1004) on March 9th, 2026, and I’m wondering if it’s been fulfilled yet or if it’s still being prepared?",
+  "answer": "The order is still being processed.",
+  "evidence": "status: processing",
+  "source": "orders.json"
+ },
+ {
+  "question": "Does Nimbus Coffee sell my personal information to third parties?",
+  "answer": "No, Nimbus Coffee does not sell personal data.",
+  "evidence": "We never sell personal data.",
+  "source": "privacy_notice.md"
+ },
+ {
+  "question": "When will the Dubai café opening be delayed to, and why is it happening?",
+  "answer": "The Dubai café opening may slip to August 2026 due to delays from the fit-out contractor.",
+  "evidence": "The Dubai café may slip from June to August because the fit-out contractor is late.",
+  "source": "q1_2026_review.pptx"
+ },
+ {
+  "question": "If I buy a coffee at Nimbus Coffee, can I get a refund if I don’t like it, and if so, how will I receive the money back?",
+  "answer": "No, café purchases (like drinks) are not refundable, but Nimbus Coffee will remake the drink for you. Refunds (if applicable) go back to the original payment method within 5–7 business days.",
+  "evidence": "Drinks and food bought in a café are not refundable, but we will happily remake a drink you don't like.",
+  "source": "refunds_and_returns.html"
+ },
+ {
+  "question": "Can I change my coffee blend or skip a delivery if I’m not happy with my current subscription?",
+  "answer": "Yes, you can switch blends, skip a delivery, or pause your subscription anytime from your account page.",
+  "evidence": "You can switch blends, skip a delivery or pause your subscription anytime from your account page.",
+  "source": "subscriptions.txt"
+ },
+ {
+  "question": "Hi there, I’m finalizing the contract with our new coffee bean supplier. Could you remind me how much of the total payment is due when the order is delivered, and by what deadline?",
+  "answer": "60% of the price is due within 30 days of delivery.",
+  "evidence": "On delivery | 60% | Within 30 days",
+  "source": "supplier_contract.docx"
+ },
+ {
+  "question": "How much of the energy used at the Bengaluru roastery came from solar power last year?",
+  "answer": "35%",
+  "evidence": "The Bengaluru roastery ran on **35% solar power** in 2025.",
+  "source": "sustainability_report_2025.md"
+ },
+ {
+  "question": "If I take a taxi abroad for a business trip, do I need to provide a receipt, and if so, when is it required?",
+  "answer": "Yes, a receipt is required for any taxi ride above 500 rupees.",
+  "evidence": "Taxi receipts are required for any ride above 500 rupees.",
+  "source": "travel_policy.md"
+ },
+ {
+  "question": "Why did the East region have the slowest growth in sales for Nimbus Coffee last year?",
+  "answer": "Two cafés in Kolkata were closed for renovation for most of the year.",
+  "evidence": "The East region grew slowest because two cafés in Kolkata were closed for renovation for most of the year.",
+  "source": "annual_report_2025.pdf"
+ },
+ {
+  "question": "How much revenue did Nimbus Coffee generate in the East region for the year 2025, and what was the growth percentage compared to 2024?",
+  "answer": "Nimbus Coffee generated ₹17 crore in the East region for 2025, with a growth of 13% compared to 2024.",
+  "evidence": "|East|15|17|13%|",
+  "source": "annual_report_2025.pdf"
+ }
+]

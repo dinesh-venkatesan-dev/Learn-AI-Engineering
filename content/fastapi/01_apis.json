@@ -1,0 +1,309 @@
+{
+ "track": "fastapi",
+ "id": "01",
+ "title": "APIs with FastAPI",
+ "summary": "Nimbus's agents are only useful once other programs can call them: a website, a mobile app, a partner. **FastAPI** turns typed Python functions into an HTTP API with validation, documentation and clear errors from the same declarations. This module builds the Nimbus API: endpoints and parameters, request and response models, one error shape, dependencies, routers, settings and lifespan, middleware and CORS, and a support-reply endpoint backed by the model.",
+ "learn": [
+  "Your first app: path operations, JSON, the free `/docs`, and running it with uvicorn",
+  "**Path and query parameters**: types, enums, rules, parameter models, and 422 before your code runs",
+  "**Request bodies and responses**: models in, a different model out, status codes and headers",
+  "**Errors** in one shape, **dependency injection**, **routers** and a project layout",
+  "**Settings and lifespan** (create the model once), **middleware**, **CORS** and GZip"
+ ],
+ "flow": "browser / app ─→ CORS ─→ request id + timing ─→ GZip ─→ FastAPI: route → dependencies (settings, API key, audit, model)\n   → validate → your function → return model (filters internals) ─→ JSON          any error → {\"error\": {\"code\", \"message\"}}",
+ "labs": [
+  {
+   "lab": "api.first-app",
+   "icon": "⚡",
+   "covers": [
+    "api.l01",
+    "api.l02"
+   ],
+   "explain": "The **Nimbus API** serves orders and the café menu with typed parameters. The lab sends the same nine requests (good ones, a missing order, wrong types, out-of-range numbers, a misspelt parameter) to it and to the **same endpoints parsed by hand**, and scores which answered correctly, which crashed, and how much bad input reached the code.\n\nType your own request to compare both responses side by side.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.routers.orders",
+     "symbol": "get_order",
+     "why": "A typed path parameter and a return model: validation in, filtering out.",
+     "notes": [
+      {
+       "match": "def get_order(order_id: OrderId, store: StoreDep) -> Order:",
+       "text": "The return type filters: customer ids never leave the service."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.api.routers.menu",
+     "symbol": "MenuFilter",
+     "why": "Query parameters as one model.",
+     "notes": [
+      {
+       "match": "model_config = {\"extra\": \"forbid\"}",
+       "text": "A misspelt parameter is an error, not silently ignored."
+      },
+      {
+       "match": "limit: int = Field(10, ge=1, le=20)",
+       "text": "Rules: FastAPI answers 422 when they're broken."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.fastapi.m01_apis",
+     "symbol": "hand_parsed_app",
+     "why": "The alternative: parameters read by hand.",
+     "notes": [
+      {
+       "match": "def get_order(order_id):  # no type: anything gets in",
+       "text": "No type: no validation and no documentation."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "api.bodies",
+   "icon": "📨",
+   "covers": [
+    "api.l03"
+   ],
+   "explain": "POST **/support/reply** with a valid body, nested history, and five kinds of bad input (an empty message, a 'system' turn, a huge length, an unknown field, text/plain); path + query + body in one endpoint; the schema's example; and one real reply from the model.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.schemas",
+     "symbol": "ReplyRequest",
+     "why": "The body.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "api.responses",
+   "icon": "📤",
+   "covers": [
+    "api.l04"
+   ],
+   "explain": "The reply endpoint's **return type filtering** an internal draft (system prompt, model, tokens); **201**, **204**, **exclude_none**, headers and your own **Response** objects.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.schemas",
+     "symbol": "Draft",
+     "why": "What we keep.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.api.schemas",
+     "symbol": "ReplyPublic",
+     "why": "What the client sees.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "api.errors",
+   "icon": "🚨",
+   "covers": [
+    "api.l05"
+   ],
+   "explain": "Five failures through the Nimbus API (**your own exceptions**, one handler each, **one shape**) and through FastAPI's defaults; then an **unexpected bug**: a generic 500 with a request id for the client, the details in the log.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.errors",
+     "symbol": "install_error_handlers",
+     "why": "One shape for every error.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "api.dependencies",
+   "icon": "🔌",
+   "covers": [
+    "api.l06"
+   ],
+   "explain": "An **API key** dependency read from a header, an **Annotated alias**, a **sub-dependency** that runs once per request, **yield** dependencies with both cleanup scopes, an **app-wide audit**; then the Nimbus API's own key check and audit log.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.deps",
+     "symbol": "api_key",
+     "why": "The key, checked in constant time.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "api.layout",
+   "icon": "🗂️",
+   "covers": [
+    "api.l07"
+   ],
+   "explain": "The Nimbus API's **files and routers**, its paths grouped by tag, one router mounted as **/v1 and /v2**, and the **create_app factory** building two differently configured apps.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.app",
+     "symbol": "create_app",
+     "why": "The factory.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "api.settings",
+   "icon": "⚙️",
+   "covers": [
+    "api.l08"
+   ],
+   "explain": "Typed **settings** from the environment, the cached get_settings(), and ten requests to an app that builds a model client **per request** against one that builds it **once in the lifespan**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.app",
+     "symbol": "create_app",
+     "why": "The lifespan.",
+     "notes": [
+      {
+       "match": "app.state.chat_model = chat_model or get_chat_model(settings)  # ONE client for every request",
+       "text": "Created once, at start-up; closed at shutdown."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "api.middleware",
+   "icon": "🧅",
+   "covers": [
+    "api.l09"
+   ],
+   "explain": "The Nimbus API's **request id and timing** headers, **middleware order**, a browser **preflight** from our front end and from another site, and **GZip** on a large response.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.middleware",
+     "symbol": "install_request_context",
+     "why": "Request id and timing.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the Nimbus API",
+  "summary": "The Nimbus API is a create_app() factory with routers per area, request and response models per direction, one error shape, dependencies for settings, the model, the store, API keys and auditing, a lifespan that builds the model client once, and middleware for request ids, timing, GZip and CORS.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "contract",
+    "title": "Contract",
+    "icon": "📜",
+    "tagline": "Models per direction",
+    "explain": "ReplyRequest validates what clients send (roles, a bounded history, a length range, no unknown fields); the endpoint returns ReplyPublic, so the Draft's system prompt and model never leave.",
+    "code": [
+     {
+      "module": "nimbus.api.routers.support",
+      "symbol": "reply",
+      "why": "The reply endpoint.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "The OpenAPI schema at /openapi.json is the contract: generate client types from it."
+    ]
+   },
+   {
+    "id": "errors",
+    "title": "Errors",
+    "icon": "🚨",
+    "tagline": "One shape",
+    "explain": "ApiError subclasses (NotFound, Unauthorized, ModelUnavailable, ModelError) raised anywhere; handlers for them, HTTPException, validation errors and anything unexpected, all as {\"error\": {\"code\", \"message\"}}.",
+    "code": [
+     {
+      "module": "nimbus.api.errors",
+      "symbol": "install_error_handlers",
+      "why": "The handlers.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Alert on internal_error: each one is a bug, logged with its request id."
+    ]
+   },
+   {
+    "id": "structure",
+    "title": "Structure",
+    "icon": "🏗️",
+    "tagline": "Factory, lifespan, dependencies",
+    "explain": "create_app(store, settings, chat_model): routers for orders, menu and support; the lifespan builds the model client once and closes it; dependencies read app.state, so tests pass their own settings and fakes.",
+    "code": [
+     {
+      "module": "nimbus.api.app",
+      "symbol": "create_app",
+      "why": "The app.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.api.deps",
+      "symbol": "audit",
+      "why": "Router-wide auditing.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Set NIMBUS_API_KEYS in production: with no keys configured the API is open."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "10 requests, two versions",
+    "lab": "api.contract-eval",
+    "explain": "Orders, the menu, three real replies, bad bodies and a provider outage, against a naive first version and the Nimbus API.\n\n| | right status | errors in one shape | responses leaking internals | model clients (3 replies) | reply p50 | our front end (CORS) |\n|---|---|---|---|---|---|---|\n| First version | 9/10 | 0% | 3 | 3 | 2.7 s | refused |\n| **Nimbus API** | **10/10** | **100%** | **0** | **1** | **2.5 s** | **allowed** |\n\nThe first version answered errors in three shapes (`{\"detail\": \"...\"}`, a list of validation details, and a plain-text `Internal Server Error` when the provider was down), sent its internal draft (system prompt and model name) with every reply, and built a new model client per request. The Nimbus API answers every error as `{\"error\": {\"code\", \"message\"}}`, turns the outage into a 503 with Retry-After, and returns only the answer and its length.",
+    "code": [
+     {
+      "module": "academy.labs.fastapi.m01_apis",
+      "symbol": "run_contract",
+      "why": "The contract run.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Module 3 turns these requests into pytest tests that run in CI."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/api/app.py",
+   "role": "create_app: lifespan, routers, handlers, middleware"
+  },
+  {
+   "path": "src/nimbus/api/schemas.py",
+   "role": "Request and response models"
+  },
+  {
+   "path": "src/nimbus/api/errors.py",
+   "role": "One error shape"
+  },
+  {
+   "path": "src/nimbus/api/deps.py",
+   "role": "Settings, model, store, API key, audit"
+  },
+  {
+   "path": "src/nimbus/api/middleware.py",
+   "role": "Request id and timing"
+  },
+  {
+   "path": "src/nimbus/api/routers/",
+   "role": "orders, menu, support"
+  },
+  {
+   "path": "src/academy/labs/fastapi/m01_apis.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Run the Nimbus API (then open /docs)",
+   "cmd": "uv run uvicorn nimbus.api.app:app --reload"
+  }
+ ]
+}

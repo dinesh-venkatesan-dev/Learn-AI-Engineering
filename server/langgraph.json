@@ -1,0 +1,12 @@
+{
+  "dependencies": [
+    ".."
+  ],
+  "graphs": {
+    "desk": "./desk_graph.py:graph",
+    "researcher": "./ops_research.py:researcher",
+    "ops": "./ops_server.py:graph",
+    "assistant": "./assistant_graph.py:graph"
+  },
+  "env": "../.env"
+}

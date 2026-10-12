@@ -1,0 +1,277 @@
+{
+ "track": "fastapi",
+ "id": "04",
+ "title": "From agent to service",
+ "summary": "The support agent becomes a service: built once at start-up with a checkpointer, called over HTTP with typed requests and meaningful errors, streamed as typed events, protected from blocking calls and bursts, with conversations that survive a restart, and slow work moved to background jobs in Redis.",
+ "learn": [
+  "**Serving an agent**: built once, a thread per conversation, JSON and streamed endpoints",
+  "**Typed, honest APIs**: 422 before any model call, 503 with Retry-After when the provider is down, /health",
+  "**Streaming typed events** (tool, tool_result, token, done), and **stopping when the client leaves**",
+  "**Async and concurrency**: ainvoke, a semaphore for the provider, a time budget (504)",
+  "**Conversations in Postgres**, and **background jobs** with RQ: 202, poll, retries"
+ ],
+ "flow": "website backend ─(X-API-Key, X-Customer-ID)→ POST /agent/chat[/stream]\n   → slot (semaphore) → time budget → agent.ainvoke / astream (thread = customer:thread_id, checkpoints in Postgres)\n   → reply | events: tool → tool_result → token… → done\nPOST /reports → 202 + job id ──→ Redis ──→ RQ worker ──→ GET /reports/{id}",
+ "labs": [
+  {
+   "lab": "lc.agent-api",
+   "icon": "🤖",
+   "covers": [
+    "lc.l61"
+   ],
+   "explain": "Two turns on one thread through **POST /agent/chat** (the follow-up needs the first turn), and the thread read back from the checkpointer.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.agent_service",
+     "symbol": "AgentService",
+     "why": "The service.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.agent-api",
+   "icon": "🧾",
+   "covers": [
+    "prod.l01"
+   ],
+   "explain": "The agent **built once** for five requests, four bad requests refused **before any model call**, a provider outage as **503 with Retry-After**, the health check, and a test through **ASGITransport**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.routers.agent",
+     "symbol": "chat",
+     "why": "The endpoint.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.streaming",
+   "icon": "🌊",
+   "covers": [
+    "prod.l02"
+   ],
+   "explain": "The support agent **streamed** from a real server as typed events (tool, tool_result, token, done) read with **httpx-sse**; then a client that **leaves after two tokens**, and a run that stops with it.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.streaming",
+     "symbol": "in_own_task",
+     "why": "Stopping when the client leaves.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.api.agent_service",
+     "symbol": "AgentService",
+     "why": "The stream.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.concurrency",
+   "icon": "🚦",
+   "covers": [
+    "prod.l03"
+   ],
+   "explain": "Six requests at once, each needing a 1-second model call: a **blocking** endpoint, an **async** one, and one limited to **two model calls at a time**; then a **time budget** (504).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.fastapi.m04_agent_service",
+     "symbol": "concurrency_app",
+     "why": "The comparison.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.persistence",
+   "icon": "💾",
+   "covers": [
+    "prod.l04"
+   ],
+   "explain": "One conversation with a **restart** in between, with the **in-memory** checkpointer and with **AsyncPostgresSaver**. Needs `docker compose up -d`.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.agent_service",
+     "symbol": "AgentService",
+     "why": "start(): the checkpointer.",
+     "notes": [
+      {
+       "match": "checkpointer = await stack.enter_async_context(AsyncPostgresSaver.from_conn_string(url))",
+       "text": "Postgres checkpoints, opened in the lifespan."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "prod.jobs",
+   "icon": "📬",
+   "covers": [
+    "prod.l05"
+   ],
+   "explain": "**POST /reports** answers 202 at once; an **RQ worker** builds the weekly digest while the client polls; a **flaky job** retried until it succeeds. Needs `docker compose up -d` (Redis).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.routers.reports",
+     "symbol": "create_report",
+     "why": "Enqueue.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.api.jobs",
+     "symbol": "weekly_digest",
+     "why": "The job.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the support agent as a service",
+  "summary": "The Nimbus API serves the support agent: one agent built at start-up with Postgres checkpoints, threads namespaced by customer, a semaphore and a time budget around every run, typed events streamed until the client leaves, and the weekly digest as a background job.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "service",
+    "title": "Service",
+    "icon": "🤖",
+    "tagline": "Built once, guarded",
+    "explain": "AgentService.start builds the agent with its checkpointer in the lifespan; ask() takes a slot, sets a time budget and maps provider failures to 503/502.",
+    "code": [
+     {
+      "module": "nimbus.api.agent_service",
+      "symbol": "AgentService",
+      "why": "The service.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "agent_concurrency stays below the provider's limit; agent_timeout_s below the load balancer's."
+    ]
+   },
+   {
+    "id": "stream",
+    "title": "Stream",
+    "icon": "🌊",
+    "tagline": "Typed events, stopped on disconnect",
+    "explain": "stream() turns agent.astream(updates, messages) into tool, tool_result, token and done events; the run lives in its own task, cancelled the moment the client leaves.",
+    "code": [
+     {
+      "module": "nimbus.api.streaming",
+      "symbol": "in_own_task",
+      "why": "Why its own task.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Without it, a client that leaves doesn't stop the run: under Starlette's anyio cancellation LangGraph can't clean up."
+    ]
+   },
+   {
+    "id": "memory",
+    "title": "Memory",
+    "icon": "💾",
+    "tagline": "Threads in Postgres",
+    "explain": "agent_checkpointer=postgres keeps every thread in the course database; thread ids are namespaced by customer, so a customer can only read their own.",
+    "code": [
+     {
+      "module": "nimbus.api.routers.agent",
+      "symbol": "thread_key",
+      "why": "Namespaced threads.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Expire old checkpoints (Agents track, Module 5)."
+    ]
+   },
+   {
+    "id": "jobs",
+    "title": "Jobs",
+    "icon": "📬",
+    "tagline": "Slow work in RQ",
+    "explain": "POST /reports enqueues weekly_digest and answers 202; workers run it; retries with intervals need --with-scheduler.",
+    "code": [
+     {
+      "module": "nimbus.api.routers.reports",
+      "symbol": "create_report",
+      "why": "Enqueue.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.api.jobs",
+      "symbol": "flaky_sync",
+      "why": "Retried.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Run workers as their own deployment, scaled on queue length (Production track)."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "Across a restart",
+    "lab": "prod.service-eval",
+    "explain": "Two conversations whose second turn only makes sense with the first, each streamed on a real server and continued after a restart, with each checkpointer.\n\n| | follow-ups right after a restart | first streamed event (p50) |\n|---|---|---|\n| checkpointer: memory | 0/2 | 3.1 s |\n| **checkpointer: postgres** | **2/2** | **1.6 s** |\n\nEach second turn (\"How much did it cost?\", \"When was it delivered?\") only makes sense with the first (\"my order NC-20417\", \"my oldest order\"). After a restart the in-memory checkpointer had forgotten the thread and both follow-ups missed the right fact; with Postgres both did. Streaming the same runs also showed the service stopping work when a client leaves: after a client disconnected at word 2, the model produced 2 words, not 15. That needed the run in its own task (`streaming.in_own_task`); with Starlette's cancellation alone the run kept going.",
+    "code": [
+     {
+      "module": "academy.labs.fastapi.m04_agent_service",
+      "symbol": "evaluate_service",
+      "why": "The measurement.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Run it against every deployment: a restart must never lose a conversation."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/api/agent_service.py",
+   "role": "The support agent as a service"
+  },
+  {
+   "path": "src/nimbus/api/streaming.py",
+   "role": "Stopping runs when clients leave"
+  },
+  {
+   "path": "src/nimbus/api/routers/agent.py",
+   "role": "/agent endpoints"
+  },
+  {
+   "path": "src/nimbus/api/routers/reports.py",
+   "role": "/reports: jobs"
+  },
+  {
+   "path": "src/nimbus/api/jobs.py",
+   "role": "What the workers run"
+  },
+  {
+   "path": "docker-compose.yml",
+   "role": "Postgres and Redis"
+  },
+  {
+   "path": "src/academy/labs/fastapi/m04_agent_service.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Start Postgres and Redis",
+   "cmd": "docker compose up -d"
+  },
+  {
+   "label": "Run the API with Postgres checkpoints",
+   "cmd": "NIMBUS_AGENT_CHECKPOINTER=postgres uv run uvicorn nimbus.api.app:app"
+  },
+  {
+   "label": "Run a worker",
+   "cmd": "uv run rq worker --url redis://127.0.0.1:6390/0 --worker-class rq.worker.SimpleWorker --with-scheduler reports"
+  }
+ ]
+}

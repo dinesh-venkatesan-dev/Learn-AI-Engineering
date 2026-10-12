@@ -1,0 +1,406 @@
+{
+ "track": "rag",
+ "id": "06",
+ "title": "Retrieval: filters, hybrid search & reranking",
+ "summary": "The first search is rarely the best one. This module covers everything between the question and the chunks a model reads: **search settings** (k, thresholds, MMR), **filters** (written by hand or by the model from the question), **time** (which version of a policy is in force), **hybrid search** (keywords and embeddings fused), **learned sparse vectors and ColBERT**, **reranking** with a cross-encoder, **query transformations** (multi-query, HyDE, step-back, decomposition), **parent-document** retrieval and **contextual compression**. Production's retriever becomes hybrid + reranked + time-aware: hit@1 0.64 → 0.82.",
+ "learn": [
+  "**Retrievers**: one interface over k, score thresholds, MMR and filters",
+  "**Metadata filters and self-query**: hard constraints enforced exactly, with the model writing the filter",
+  "**Time-aware retrieval**: validity dates, 'as of' questions, recency boosts, dates in the prompt",
+  "**Hybrid search**: BM25 and embeddings fused by rank (RRF), and why tokenization matters",
+  "**SPLADE and ColBERT**: learned sparse vectors and late interaction in Qdrant",
+  "**Reranking**: cross-encoders, two-stage retrieval, FlashRank, Cohere, an LLM",
+  "**Query transformations, parent documents and compression**: better questions, bigger context, less noise"
+ ],
+ "flow": "question ─(translate if non-ASCII)─→ query\n   ├─ Postgres full-text (ts_rank) ─┐\n   └─ pgvector HNSW (cosine)  ──────┴─ RRF fusion → 10 candidates (filter: valid today)\n                                          └─ FlashRank cross-encoder → best k",
+ "labs": [
+  {
+   "lab": "rag.retrievers",
+   "icon": "🎚️",
+   "covers": [
+    "lc.l44",
+    "rag.l31"
+   ],
+   "explain": "Production's chunks behind LangChain's **Retriever** interface: `invoke`, `batch`, piping into chains, metadata filters, and search types. The lab measures precision and recall across k on all 45 questions, a score threshold on an on-topic and an off-topic question, and MMR's variety.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m06_retrieval",
+     "symbol": "score_threshold",
+     "why": "Return nothing rather than noise.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.rag.m06_retrieval",
+     "symbol": "k_trade_off",
+     "why": "k measured.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.self-query",
+   "icon": "🧾",
+   "covers": [
+    "rag.l32"
+   ],
+   "explain": "\"Which vegan things cost less than 210 rupees?\" has hard constraints that semantic search treats as words to resemble. The lab compares plain search, a hand-written **metadata filter**, and **self-query**: the model writes a search plan (query + filter fields) from the question, constrained by a schema.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m06_retrieval",
+     "symbol": "SearchPlan",
+     "why": "The schema is the guard rail: only these fields can be filtered.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.rag.m06_retrieval",
+     "symbol": "self_query",
+     "why": "Plan → filter.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.time-aware",
+   "icon": "📅",
+   "covers": [
+    "rag.l33"
+   ],
+   "explain": "The corpus holds two handbooks: the archived 2024 edition (20 days of leave) and the current one (24 days). Both answer 'how many days of leave?'. The lab filters by **validity dates**, extracts the date from **'as of' questions**, boosts **recent notices** with a half-life, and shows what **dates in the prompt** change.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.registry",
+     "symbol": "apply_registry",
+     "why": "Production: validity dates from the document registry onto every chunk.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.rag.ingestion.registry",
+     "symbol": "valid_on",
+     "why": "The filter the retriever applies.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.hybrid",
+   "icon": "🔀",
+   "covers": [
+    "rag.l34"
+   ],
+   "explain": "Six questions where one method or the other fails (an email address, a GSTIN, a paraphrase), through **BM25**, **dense**, **Reciprocal Rank Fusion** and LangChain's **EnsembleRetriever**; then all 45 questions, including BM25 with its default tokenizer.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m06_retrieval",
+     "symbol": "reciprocal_rank_fusion",
+     "why": "RRF by hand: positions only.",
+     "notes": [
+      {
+       "match": "scores[key] = (scores[key][0] + 1 / (k + position), doc)",
+       "text": "1/(60 + rank) from each list, summed."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.store",
+     "symbol": "hybrid_config",
+     "why": "Production: hybrid search inside Postgres.",
+     "notes": [
+      {
+       "match": "fusion_function=reciprocal_rank_fusion",
+       "text": "The same fusion, in langchain-postgres."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.sparse-colbert",
+   "icon": "🧬",
+   "covers": [
+    "rag.l35"
+   ],
+   "explain": "Beyond one vector per chunk: **SPLADE** (a sparse vector of word weights that also adds related words), dense vs sparse vs hybrid collections in **Qdrant**, and **ColBERT** (a vector per token, scored by MaxSim) as a reranker, with what each stores per chunk.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m06_retrieval",
+     "symbol": "maxsim",
+     "why": "ColBERT's score.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.rag.m06_retrieval",
+     "symbol": "a_splade_vector",
+     "why": "Reading a SPLADE vector.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.reranking",
+   "icon": "🥇",
+   "covers": [
+    "rag.l36",
+    "lc.l47.3"
+   ],
+   "explain": "**Bi-encoders** (embeddings) encode the question and each chunk separately; **cross-encoders** read them together. The lab fetches candidates with embeddings and reorders them with **FlashRank** (a local cross-encoder), on four questions and all 45; plus an **LLM** reranker and Cohere's hosted one (when a key is set).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.rerank",
+     "symbol": "rerank",
+     "why": "Production's reranker.",
+     "notes": [
+      {
+       "match": "RerankRequest(query=question, passages=",
+       "text": "Question and each passage scored together."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.rerank",
+     "symbol": "ranker",
+     "why": "Loaded once per process.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.query-transform",
+   "icon": "✍️",
+   "covers": [
+    "lc.l47.1",
+    "lc.l47.2",
+    "rag.l37"
+   ],
+   "explain": "Improve the question before searching: **multi-query** for vague questions, **HyDE** (search with a hypothetical answer), **step-back** (the general rule behind a specific case) and **decomposition** (one search per sub-question), plus LangChain's MultiQueryRetriever.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m06_transform",
+     "symbol": "multi_query",
+     "why": "Rewrites, searched and merged.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.rag.m06_transform",
+     "symbol": "hyde",
+     "why": "Searching with a made-up answer.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.parent-docs",
+   "icon": "🪆",
+   "covers": [
+    "rag.l38"
+   ],
+   "explain": "Small chunks match precisely; big sections hold whole answers. Index something small (child chunks, a **summary**, or **questions** the section answers) and return the **parent** section. Measured on the handbook and contract questions.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m06_transform",
+     "symbol": "parent_document",
+     "why": "Search small, return big.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.rag.m06_transform",
+     "symbol": "built_in_parent_retriever",
+     "why": "LangChain's ParentDocumentRetriever.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.compression",
+   "icon": "🗜️",
+   "covers": [
+    "rag.l39"
+   ],
+   "explain": "Retrieved chunks are mostly context around one useful sentence. An **embedding filter** keeps similar sentences for free; **LLM extraction** copies out only what answers (checked for verbatim copying). The lab measures the characters saved.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m06_transform",
+     "symbol": "embedding_filter",
+     "why": "Sentence-level filtering.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.rag.m06_transform",
+     "symbol": "llm_extraction",
+     "why": "Extraction, verified.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus retriever v3",
+  "summary": "The production Retriever now searches the way the evaluation said is best: **hybrid** (Postgres full-text + pgvector, fused by RRF) for 10 candidates, **reranked** by a local cross-encoder (FlashRank), among documents **valid today** (validity dates from a document registry). On all 45 questions against the real index: hit@1 0.64 → 0.82, MRR 0.727 → 0.874, for about 65 ms more per question.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "registry",
+    "title": "Validity dates",
+    "icon": "📅",
+    "tagline": "Only what's in force",
+    "explain": "A document registry (`data/nimbus/.documents.json`, standing in for a content system) gives documents `valid_from` / `valid_to`. Ingestion stamps them on every chunk (two new metadata columns, added by a small migration), and the retriever filters to documents valid on the question's date: today unless the caller passes another. The archived 2024 handbook no longer answers today's questions.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.registry",
+      "symbol": "load_registry",
+      "why": "The registry.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.ingestion.registry",
+      "symbol": "apply_registry",
+      "why": "Dates on every Document.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.ingestion.store",
+      "symbol": "VectorIndex._ensure_table",
+      "why": "The migration.",
+      "notes": [
+       {
+        "match": "add column if not exists",
+        "text": "Existing tables get the new columns; re-ingestion fills them."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Have the system that owns a document (HR, legal) own its dates too: a registry nobody updates is worse than none.",
+     "Log which version answered: auditors ask."
+    ]
+   },
+   {
+    "id": "hybrid",
+    "title": "Hybrid search",
+    "icon": "🔀",
+    "tagline": "Full-text + vectors in Postgres",
+    "explain": "`search_mode=hybrid` runs Postgres full-text search (to_tsvector / ts_rank, with a GIN index) and the HNSW vector search, each for `search_candidates` results, and fuses them with Reciprocal Rank Fusion. Exact strings (emails, order ids, GSTINs) come from full-text, paraphrases from vectors.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.store",
+      "symbol": "hybrid_config",
+      "why": "The fusion.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.ingestion.store",
+      "symbol": "VectorIndex.ensure_text_index",
+      "why": "The GIN index, created once.",
+      "notes": [
+       {
+        "match": "using gin (to_tsvector('english', content))",
+        "text": "An expression index: no extra column to keep in sync."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Postgres's English text search stems words and drops stop words; product codes with punctuation may need the 'simple' configuration.",
+     "RRF ignores score sizes: a weak keyword match can outrank a strong vector match. The reranker after it corrects that."
+    ]
+   },
+   {
+    "id": "rerank",
+    "title": "Rerank",
+    "icon": "🥇",
+    "tagline": "A cross-encoder over 10 candidates",
+    "explain": "`rerank=flashrank` scores each candidate together with the question (ms-marco-MiniLM-L-12-v2, ~22 MB, local) and keeps the best k. 10 candidates beat 20 and 40 here: more candidates added latency without finding more answers.",
+    "code": [
+     {
+      "module": "nimbus.rag.rerank",
+      "symbol": "rerank",
+      "why": "The reranker.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.retriever",
+      "symbol": "Retriever.search",
+      "why": "The whole pipeline.",
+      "notes": [
+       {
+        "match": "candidates = index.search(prepared.query, k=fetch, filter=valid_on(day, audience))",
+        "text": "Candidates among documents valid on the day that this audience may read."
+       },
+       {
+        "match": "if s.rerank == \"flashrank\":",
+        "text": "Rerank, then keep k."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "The reranker runs on the CPU per request: watch p95 latency under load and cap candidates.",
+     "Re-measure when the corpus or language mix changes: ms-marco models are English."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "Five configurations, the real index",
+    "lab": "rag.retrieval-eval",
+    "explain": "The production Retriever against the Postgres index, all 45 questions:\n\n| configuration | hit@1 | hit@3 | hit@5 | MRR | p50 |\n|---|---|---|---|---|---|\n| v2 · dense | 0.64 | 0.80 | 0.89 | 0.727 | 39 ms |\n| hybrid (RRF) | 0.69 | 0.87 | 0.93 | 0.779 | 42 ms |\n| dense + FlashRank 10 | 0.80 | 0.91 | 0.91 | 0.852 | 105 ms |\n| **hybrid + FlashRank 10** | **0.82** | **0.93** | **0.93** | **0.874** | 103 ms |\n| hybrid + FlashRank 40 | 0.80 | 0.93 | 0.96 | 0.869 | 412 ms |\n\nAll rows filter to documents valid today, which already lifted plain dense search (the archived handbook no longer competes).",
+    "code": [
+     {
+      "module": "academy.labs.rag.m06_transform",
+      "symbol": "evaluate_retriever",
+      "why": "The evaluation.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "The query transformations (multi-query, HyDE…) and parent retrieval aren't on by default: each costs model calls per question and the evaluation didn't show a failure they fix. Keep them for question types where it does.",
+     "Track hit@1 if the model reads only the top chunk; hit@k if it reads k."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/rag/retriever.py",
+   "role": "Translate → hybrid candidates (valid today) → rerank → top k"
+  },
+  {
+   "path": "src/nimbus/rag/rerank.py",
+   "role": "FlashRank cross-encoder"
+  },
+  {
+   "path": "src/nimbus/rag/ingestion/store.py",
+   "role": "Hybrid search config, GIN and HNSW indexes, validity columns"
+  },
+  {
+   "path": "src/nimbus/rag/ingestion/registry.py",
+   "role": "The document registry: validity dates on every chunk"
+  },
+  {
+   "path": "data/nimbus/.documents.json",
+   "role": "Registry entries (the archived handbook's dates)"
+  },
+  {
+   "path": "src/academy/labs/rag/m06_retrieval.py, m06_transform.py",
+   "role": "The labs"
+  },
+  {
+   "path": "tests/test_retrieval_v3.py",
+   "role": "Registry, filter, reranker"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Re-ingest (adds validity columns and the full-text index once)",
+   "cmd": "uv run nimbus rag ingest"
+  },
+  {
+   "label": "Dense search without reranking, to compare",
+   "cmd": "NIMBUS_SEARCH_MODE=dense NIMBUS_RERANK=off uv run academy"
+  },
+  {
+   "label": "Tests",
+   "cmd": "uv run pytest tests/test_retrieval_v3.py tests/test_retriever.py"
+  }
+ ]
+}

@@ -1,0 +1,238 @@
+{
+ "track": "rag",
+ "id": "08",
+ "title": "Advanced RAG architectures",
+ "summary": "A fixed pipeline (retrieve once, answer once) handles most document questions. Some questions need more: one that spans documents and structured data, small talk that needs no search, chunks that turn out irrelevant, an answer that drifts from its sources, facts connected across documents, a chart. This module builds each architecture that handles one of those: **agentic RAG** with a tool per source, **corrective RAG** and **Self-RAG** as LangGraph graphs, **GraphRAG** over extracted triples, and **multimodal RAG**. Production gets a knowledge agent, measured against the Module 7 answerer.",
+ "learn": [
+  "**Agentic RAG**: retrieval as a tool; one tool per knowledge source; the agent decides whether, where and how often",
+  "**Corrective RAG**: grade the chunks, rewrite and retry, or say so, as a LangGraph",
+  "**Self-RAG**: grade the answer for support and relevance, regenerate, give up",
+  "**GraphRAG**: triples into a graph, multi-hop answers by walking it",
+  "**Multimodal RAG**: images described, indexed beside text, answered with the original image"
+ ],
+ "flow": "question → knowledge agent ─┬─ search_documents (production Retriever) → numbered sources\n                             ├─ query_menu_and_orders (read-only SQL) → rows\n                             └─ no tool (small talk)\n           ← loops until it can answer, citing [source files]",
+ "labs": [
+  {
+   "lab": "rag.agentic",
+   "icon": "🤖",
+   "covers": [
+    "lc.l46",
+    "rag.l44"
+   ],
+   "explain": "Retrieval as a **tool**: the agent decides whether to search (not for 'hi'), how often, and with what query. Then production's knowledge agent with **one tool per source**: document search and read-only SQL over the menu and orders, on aggregate and multi-hop questions.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.agent",
+     "symbol": "build_tools",
+     "why": "Production's tools.",
+     "notes": [
+      {
+       "match": "def search_documents(query: str) -> tuple[str, list[Document]]:",
+       "text": "content_and_artifact: the model reads sources, the app keeps the Documents."
+      },
+      {
+       "match": "if not sql.lstrip().lower().startswith(\"select\"):",
+       "text": "SELECT only, refused before running."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.agent",
+     "symbol": "structured_data",
+     "why": "The structured source.",
+     "notes": [
+      {
+       "match": "db.execute(\"pragma query_only = on\")",
+       "text": "After loading, the connection can't write anything."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.crag",
+   "icon": "🧹",
+   "covers": [
+    "rag.l45"
+   ],
+   "explain": "**Corrective RAG** as a LangGraph: retrieve, **grade** every chunk with an LLM, and if none is relevant **rewrite** the query and retry once, then **give up** honestly. The table shows the path each question took.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m08_advanced",
+     "symbol": "build_crag",
+     "why": "The graph.",
+     "notes": [
+      {
+       "match": "graph.add_conditional_edges(\"grade\", after_grading)",
+       "text": "The edge chooses generate, rewrite or give up."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.self-rag",
+   "icon": "🪞",
+   "covers": [
+    "rag.l46"
+   ],
+   "explain": "**Self-RAG** checks the answer: a **hallucination grader** (is every claim supported?) and an **answer grader** (does it address the question?), in a loop that regenerates until both pass, run on a deliberately fabricated answer.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m08_advanced",
+     "symbol": "self_rag_loop",
+     "why": "The loop.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.graphrag",
+   "icon": "🕸️",
+   "covers": [
+    "rag.l47"
+   ],
+   "explain": "**GraphRAG**: an LLM extracts (subject, relation, object) **triples**, networkx stores them as a graph, and a question is answered by **walking two hops** from its entities. Compared with the production retriever on a question that needs facts from two documents.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m08_advanced",
+     "symbol": "walk_from_the_question",
+     "why": "The walk.",
+     "notes": [
+      {
+       "match": "nx.ego_graph(graph.to_undirected(as_view=True), node, radius=2)",
+       "text": "Everything within two hops of the question's entities."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.multimodal",
+   "icon": "🖼️",
+   "covers": [
+    "rag.l48"
+   ],
+   "explain": "A text embedding model can't read an image, so a **vision model describes** each one; the description is indexed beside the text chunks with the image path in metadata, and the answer gets the **original image** as well as the text.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m08_advanced",
+     "symbol": "mixed_context_answer",
+     "why": "Text sources + the original images in one message.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the Nimbus knowledge agent",
+  "summary": "Nimbus's documents aren't its only knowledge: the café menu and the orders are tables, and questions about them need counting, not search. The knowledge agent has a tool per source (production's Retriever and read-only SQL), decides which to call, chains them for multi-hop questions and skips them for small talk. Measured against the answerer on 15 questions of five kinds.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "tools",
+    "title": "Tools",
+    "icon": "🧰",
+    "tagline": "A tool per knowledge source",
+    "explain": "`search_documents` wraps the production Retriever (translation, hybrid search, reranking, valid today) and returns numbered sources; the Documents travel as the tool's artifact. `query_menu_and_orders` runs one SELECT over an in-memory SQLite copy of the menu and orders, with the schema and sample values in its description, a row limit, and SQL errors returned as messages the model can fix.",
+    "code": [
+     {
+      "module": "nimbus.rag.agent",
+      "symbol": "build_tools",
+      "why": "The tools.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.agent",
+      "symbol": "structured_data",
+      "why": "The read-only database.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "For real order data, give the agent a database role with SELECT on specific views, not a file copy (the Data track builds that).",
+     "Log every SQL statement an agent runs, with the question that produced it."
+    ]
+   },
+   {
+    "id": "agent",
+    "title": "Agent",
+    "icon": "🤖",
+    "tagline": "Choose, chain, or answer directly",
+    "explain": "`create_agent` with the two tools and a system prompt that says when to use each, to answer only from what they return, and to cite source files. `KnowledgeAgent` owns the SQLite connection and closes it (a context manager), which the lab's first run showed was needed.",
+    "code": [
+     {
+      "module": "nimbus.rag.agent",
+      "symbol": "KnowledgeAgent",
+      "why": "The agent and its resources.",
+      "notes": [
+       {
+        "match": "def __exit__(self, *exc) -> None:",
+        "text": "The connection closes with the agent."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.agent",
+      "symbol": "",
+      "why": "The system prompt.",
+      "notes": [
+       {
+        "match": "- For counting, averaging, totals or comparisons over the café menu or customer orders, use query_menu_and_orders.",
+        "text": "Routing rules in plain words."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Cap steps (ModelCallLimitMiddleware, LangChain track Module 5) so a confused agent can't loop.",
+     "Every tool call resends the conversation: watch tokens per question."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "15 questions, five kinds",
+    "lab": "rag.agentic-eval",
+    "explain": "Same retriever, same model. Measured:\n\n| | documents | aggregates | multi-hop | small talk | unanswerable | tokens / question | p50 |\n|---|---|---|---|---|---|---|---|\n| answerer (Module 7) | 6/6 | 2/4 | 1/1 | 0/2 | 2/2 | 566 | 3.2 s |\n| **knowledge agent** | 5/6 | **4/4** | 1/1 | **2/2** | 2/2 | 3,649 | 2.6 s |\n\nThe agent handles what the pipeline can't (aggregates via SQL, no search for small talk) at about 6× the tokens per question, and missed one document question the answerer got. Production keeps both: the agent as the entry point, the answerer's verified citations for document answers.",
+    "code": [
+     {
+      "module": "academy.labs.rag.m08_advanced",
+      "symbol": "evaluate_agentic",
+      "why": "The evaluation.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Grow the set with real questions per kind: the split between kinds decides whether the agent's extra tokens pay off.",
+     "CRAG, Self-RAG and GraphRAG stay in the labs: they cost calls per chunk or per document, and the evaluations didn't show a failure here that they fix."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/rag/agent.py",
+   "role": "The knowledge agent: tools per source, read-only SQL, resource lifetime"
+  },
+  {
+   "path": "data/eval/agentic.json",
+   "role": "15 questions of five kinds with expected facts"
+  },
+  {
+   "path": "src/academy/labs/rag/m08_advanced.py",
+   "role": "The labs"
+  },
+  {
+   "path": "tests/test_knowledge_agent.py",
+   "role": "SQL tool: results, refusals, query-only, errors"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Knowledge agent tests",
+   "cmd": "uv run pytest tests/test_knowledge_agent.py"
+  }
+ ]
+}

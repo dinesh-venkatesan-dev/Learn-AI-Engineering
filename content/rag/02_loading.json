@@ -1,0 +1,473 @@
+{
+ "track": "rag",
+ "id": "02",
+ "title": "Loading every format",
+ "summary": "Search can only find what was loaded, and only as well as it was loaded. Nimbus's knowledge lives in Markdown, PDFs with tables, web pages, a menu CSV, order records in JSON, a Word contract, an Excel workbook, a slide deck with speaker notes, an email with an attachment, and code. Module 1's loaders read five of those formats. This module loads all of them **with their structure**: rows keep their column names, tables stay tables, sections keep their headings, slides keep their speaker notes. Then it measures what that does to the 45 evaluation questions.",
+ "learn": [
+  "**Documents and metadata**: text, facts about the text, and stable ids so re-indexing never duplicates",
+  "**Text, CSV and JSON**: one Document per file, row or record, and why the phrasing of structured data decides what search finds",
+  "**HTML**: keep the main content, drop menus and footers, keep headings; fetch pages with WebBaseLoader",
+  "**PDF text and tables**: pages, repeated headers and footers, and tables as Markdown rows instead of loose numbers",
+  "**Word, Excel, PowerPoint and email**: sections, rows with headers, speaker notes, quoted replies and attachments",
+  "**Custom loaders**: your own sources with `BaseLoader`, streaming with `lazy_load`, and one loader for a whole folder"
+ ],
+ "flow": "data/nimbus/  ─discover─→  loader_for(file) by extension\n   .md .txt .html .py ─→ TextFileLoader      one Document per file\n   .pdf               ─→ PdfLoader           one per page, tables as Markdown\n   .csv               ─→ CsvLoader           one per row, values labelled\n   .json              ─→ JsonLoader          one per record, readable lines\n   .docx              ─→ DocxLoader          one per section, tables as Markdown\n   .xlsx              ─→ XlsxLoader          one per row, header found\n   .pptx              ─→ PptxLoader          one per slide + speaker notes\n   .eml               ─→ EmlLoader           body without quotes + attachments\n   .png               ─→ (Module 3: OCR)     reported as unsupported, never silently skipped",
+ "labs": [
+  {
+   "lab": "rag.documents",
+   "icon": "📄",
+   "covers": [
+    "lc.l40.1",
+    "rag.l05"
+   ],
+   "explain": "Every loader produces **Documents**: `page_content` (embedded and searched), `metadata` (facts about the text, used to filter, cite and manage) and an `id`.\n\nThe lab gives the handbook a designed set of metadata, splits it, and indexes it three times (first run, an unchanged re-run, a run after one edit) with **random ids** and with **stable ids** built from a hash of the source and text. Count the rows each leaves behind.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m02_loading",
+     "symbol": "stable_ids",
+     "why": "A content hash: the same chunk always gets the same id.",
+     "notes": [
+      {
+       "match": "hashlib.sha256(",
+       "text": "Source + text in, the same 16-hex id out, on every machine and every run."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.store",
+     "symbol": "VectorIndex.index",
+     "why": "Production: LangChain's indexing API with a record manager.",
+     "notes": [
+      {
+       "match": "key_encoder=\"sha256\"",
+       "text": "Chunk identity = hash of content + metadata."
+      },
+      {
+       "match": "source_id_key=\"source\"",
+       "text": "All chunks of a file share a source id, so chunks that disappeared from a file get deleted."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.text-csv-json",
+   "icon": "🔤",
+   "covers": [
+    "lc.l40.2",
+    "lc.l40.3",
+    "lc.l40.4",
+    "lc.l40.5",
+    "rag.l06"
+   ],
+   "explain": "**TextLoader** reads a file as one Document, **CSVLoader** makes one per row, **DirectoryLoader** loads a folder, and `lazy_load()` streams them. JSON has no single right loader: you decide how a record reads as text.\n\nThe lab writes the 12 support orders three ways (**raw JSON**, **labelled `key: value` lines**, and **a written sentence**) and searches for them among every other chunk with six questions. The phrasing changes what gets found.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.loaders",
+     "symbol": "CsvLoader",
+     "why": "Production: one Document per row, every value labelled.",
+     "notes": [
+      {
+       "match": "text = \"\\n\".join(f\"{k}: {v}\" for k, v in row.items())",
+       "text": "Column names travel with the values: '220' alone means nothing."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.loaders",
+     "symbol": "record_text",
+     "why": "Production: a JSON record as readable lines.",
+     "notes": [
+      {
+       "match": "key.replace('_', ' ')",
+       "text": "order_id → 'order id': closer to how people ask."
+      },
+      {
+       "match": "if isinstance(v, dict)",
+       "text": "Nested items flattened to 'name: …, qty: …' instead of JSON."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.loaders",
+     "symbol": "JsonLoader",
+     "why": "One Document per record.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.html",
+   "icon": "🌐",
+   "covers": [
+    "rag.l07"
+   ],
+   "explain": "A web page is mostly furniture: menus, banners, footers, scripts. **BSHTMLLoader** keeps all visible text; keeping only `<main>` drops the clutter; writing headings as Markdown lets the splitter cut at sections. **WebBaseLoader** fetches pages over HTTP (from a local server here, so no internet is needed).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.cleaning",
+     "symbol": "html_to_text",
+     "why": "Production's cleaning step for HTML.",
+     "notes": [
+      {
+       "match": "BOILERPLATE_TAGS",
+       "text": "The tags that hold site furniture, removed before extracting text."
+      },
+      {
+       "match": "root = soup.find(\"main\") or soup.body or soup",
+       "text": "Prefer <main>: the page's own content."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.rag.m02_loading",
+     "symbol": "headings_as_markdown",
+     "why": "Headings kept as Markdown.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.pdf",
+   "icon": "📑",
+   "covers": [
+    "rag.l08",
+    "rag.l09"
+   ],
+   "explain": "PDFs store text in drawing order, with running headers and footers on every page, and tables as positioned words. The lab extracts page 2 of the annual report (a revenue table) three ways: **plain text**, **pdfplumber's table rows as Markdown**, and **PyMuPDF4LLM** (production). Then it gives the model the last rows of the table as a chunk, **flattened** and **as Markdown**, and asks for a 2024 figure.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.loaders",
+     "symbol": "PdfLoader",
+     "why": "Production: PyMuPDF4LLM, one Markdown Document per page.",
+     "notes": [
+      {
+       "match": "pymupdf4llm.to_markdown(",
+       "text": "Tables come out as Markdown tables; headings as #."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.cleaning",
+     "symbol": "remove_repeated_lines",
+     "why": "Production: running headers and footers removed per file.",
+     "notes": [
+      {
+       "match": "min_share",
+       "text": "A line on most pages of a file is furniture, not content."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.rag.m02_loading",
+     "symbol": "table_as_its_own_document",
+     "why": "A table as its own Document with element=table.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.office",
+   "icon": "🗂️",
+   "covers": [
+    "rag.l10",
+    "rag.l11"
+   ],
+   "explain": "Contracts in Word, numbers in Excel, plans in PowerPoint, decisions in email. Quick loaders flatten them: table cells on separate lines, values without their column names, slides without speaker notes, an email with the whole quoted thread. The lab loads the four office files **quickly** and **with structure**, then searches both with the 8 evaluation questions those files answer.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.office",
+     "symbol": "DocxLoader",
+     "why": "One Document per section, tables as Markdown.",
+     "notes": [
+      {
+       "match": "for block in docx.element.body.iterchildren():",
+       "text": "Paragraphs AND tables in document order: that's how a table stays inside its section."
+      },
+      {
+       "match": "if style.startswith(\"Heading\") or style == \"Title\":",
+       "text": "A heading starts a new section."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.office",
+     "symbol": "XlsxLoader",
+     "why": "One Document per row, cells labelled.",
+     "notes": [
+      {
+       "match": "data_only=True",
+       "text": "Formula results, not formulas."
+      },
+      {
+       "match": "book.close()",
+       "text": "Read-only workbooks keep the file open until closed."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.office",
+     "symbol": "PptxLoader",
+     "why": "One Document per slide.",
+     "notes": [
+      {
+       "match": "parts.append(f\"Speaker notes: {notes}\")",
+       "text": "Speaker notes: what the presenter said, often the detail people ask about."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.office",
+     "symbol": "EmlLoader",
+     "why": "Body + attachments.",
+     "notes": [
+      {
+       "match": "QUOTED_REPLY.sub(\"\", ",
+       "text": "The quoted thread is cut: it's indexed from its own email."
+      },
+      {
+       "match": "for number, attachment in enumerate(mail.iter_attachments(), start=2):",
+       "text": "Each attachment becomes its own Document, with the email's headers."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.custom-loaders",
+   "icon": "🧩",
+   "covers": [
+    "rag.l12"
+   ],
+   "explain": "Your data also lives in APIs, databases and queues. Subclass **BaseLoader**, implement `lazy_load()`, and every LangChain component can use it. The lab streams a large custom source with `load()` and with `lazy_load()` and measures peak memory, then runs production's folder loader over the whole data folder.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.loaders",
+     "symbol": "loader_for",
+     "why": "Production's folder loader: the right loader per extension.",
+     "notes": [
+      {
+       "match": "structured = {",
+       "text": "One registry: adding a format is one line here and one loader class."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.loaders",
+     "symbol": "discover",
+     "why": "Every file, in a stable order; unsupported files reported.",
+     "notes": [
+      {
+       "match": "types = VERSIONS[version]",
+       "text": "v1 (Module 1) and v2 (this module) side by side, so they can be compared."
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus loaders v2",
+  "summary": "Production ingestion goes from five formats to twelve. Every loader keeps the structure a reader relies on, records the same metadata (source, page, file type, plus what's specific: section, sheet, slide, sender), and files no loader can read are reported, never skipped silently. The evaluation step scores v1 against v2 on all 45 questions with the same cleaning, chunking and embeddings.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "registry",
+    "title": "Registry",
+    "icon": "🗃️",
+    "tagline": "One loader per file type",
+    "explain": "`discover()` lists every file (hidden files skipped, stable order) and splits them into supported and unsupported for the chosen version. `loader_for()` maps the extension to a loader. Every loader yields Documents with the same base metadata: `source` (path relative to the data folder: stable across machines), `page` (page, row, record, section or slide number: what a citation points to) and `file_type`.\n\nThe version is configuration (`NIMBUS_LOADER_VERSION`), so v1 and v2 can be compared on the same data.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.loaders",
+      "symbol": "loader_for",
+      "why": "Extension → loader.",
+      "notes": [
+       {
+        "match": "structured = {",
+        "text": "Structured formats get their own loader; text-like formats share TextFileLoader."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.ingestion.loaders",
+      "symbol": "discover",
+      "why": "Supported and unsupported files.",
+      "notes": [
+       {
+        "match": "types = VERSIONS[version]",
+        "text": "The version decides which extensions count as supported."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.config",
+      "symbol": "Settings",
+      "why": "The setting.",
+      "notes": [
+       {
+        "match": "loader_version:",
+        "text": "v2 by default; v1 kept for comparison."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Unsupported files are logged and listed in the ingestion report: a file nobody can search is a gap to fix, not to hide.",
+     "Loaders run per file and a failure is recorded per file: one corrupt spreadsheet must not stop the other 10,000 files."
+    ]
+   },
+   {
+    "id": "records",
+    "title": "Records",
+    "icon": "🧾",
+    "tagline": "CSV rows and JSON records as text",
+    "explain": "Rows and records are embedded as **labelled lines** (`item: Oat Latte`, `price_rupees: 220`), never as raw JSON: the lab measured raw JSON's MRR well below labelled lines on the same 12 orders. Nested values are flattened (`name: Nilgiri Sunrise, qty: 1, price: 720`). Each row or record is its own Document with its row number.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.loaders",
+      "symbol": "CsvLoader",
+      "why": "CSV rows.",
+      "notes": [
+       {
+        "match": "with self.path.open(newline=\"\", encoding=\"utf-8\") as f:",
+        "text": "The file is closed as soon as its rows are read."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.ingestion.loaders",
+      "symbol": "record_text",
+      "why": "JSON records as readable lines.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.ingestion.loaders",
+      "symbol": "JsonLoader",
+      "why": "JSON files.",
+      "notes": [
+       {
+        "match": "records = data if isinstance(data, list) else [data]",
+        "text": "A list of records → one Document each; any other JSON → one Document."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "For your most-asked record types (orders, products), a hand-written sentence template is worth adding; keep the generic loader for everything else.",
+     "Very large exports (millions of rows) belong in a database the agent queries (Data track), not in a vector index."
+    ]
+   },
+   {
+    "id": "office",
+    "title": "Office & email",
+    "icon": "🗂️",
+    "tagline": "Sections, rows, slides, attachments",
+    "explain": "Word documents become one Document per section with tables as Markdown; Excel sheets one per row with the header row found automatically; slides one per slide with speaker notes; emails the new text (quoted replies cut) plus each text attachment. Each carries its own metadata (`section`, `sheet`/`row`, `slide`/`title`, `from`/`subject`/`date`).",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.office",
+      "symbol": "DocxLoader",
+      "why": "Word.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.ingestion.office",
+      "symbol": "XlsxLoader",
+      "why": "Excel.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.ingestion.office",
+      "symbol": "PptxLoader",
+      "why": "PowerPoint.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.ingestion.office",
+      "symbol": "EmlLoader",
+      "why": "Email.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.ingestion.office",
+      "symbol": "markdown_table",
+      "why": "Tables as Markdown: the header row travels with the rows.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Binary email attachments (PDFs, images) should go through their own loaders with the email's metadata; here they're skipped and that's visible in the code.",
+     "LangChain's Unstructured loaders cover these formats too, at the cost of a large dependency; the small libraries used here are enough for well-formed files."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "v1 vs v2 on all 45 questions",
+    "lab": "rag.loaders-eval",
+    "explain": "Same cleaning, same chunking (500/80), same embeddings: only the loaders differ. The scorecard counts files indexed, questions whose file is indexed (coverage), questions some chunk can answer (answerable), and hit@k and MRR over all 45 questions, plus hit@k on reachable questions only (the retriever's own quality).\n\nMeasured: v2 indexes 7 more files, answerable goes 0.64 → 0.91 and hit@5 0.56 → 0.69. The retriever's hit rate on reachable questions falls (0.86 → 0.76) because the new files add harder questions and 38 more chunks compete: that's the next modules' job.",
+    "code": [
+     {
+      "module": "academy.labs.rag.m02_loading",
+      "symbol": "evaluate_loaders",
+      "why": "Both versions through the same evaluation.",
+      "notes": [
+       {
+        "match": "indexed_sources=corpus.indexed_sources(500, 80, version)",
+        "text": "Which files are indexed decides coverage: a question about an unindexed file can't be found."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.evaluation",
+      "symbol": "evaluate",
+      "why": "The shared retrieval evaluation (Module 1).",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Run this evaluation whenever a loader changes: a loader bug shows up as answerable dropping, long before users notice.",
+     "Track answerable and hit_reachable separately: the first is a loading problem, the second a retrieval problem."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/rag/ingestion/loaders.py",
+   "role": "Registry, versions, text/PDF/CSV/JSON loaders"
+  },
+  {
+   "path": "src/nimbus/rag/ingestion/office.py",
+   "role": "Word, Excel, PowerPoint and email loaders"
+  },
+  {
+   "path": "src/nimbus/config.py",
+   "role": "loader_version (NIMBUS_LOADER_VERSION)"
+  },
+  {
+   "path": "src/academy/labs/rag/m02_loading.py",
+   "role": "The labs"
+  },
+  {
+   "path": "tests/test_loaders.py",
+   "role": "Loader tests (v1/v2 discovery, every structured format)"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Ingest with loaders v2 (the default)",
+   "cmd": "uv run nimbus rag ingest"
+  },
+  {
+   "label": "Compare with v1",
+   "cmd": "NIMBUS_LOADER_VERSION=v1 uv run nimbus rag ingest"
+  },
+  {
+   "label": "Loader tests",
+   "cmd": "uv run pytest tests/test_loaders.py"
+  }
+ ]
+}

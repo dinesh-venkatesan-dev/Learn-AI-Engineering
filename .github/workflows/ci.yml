@@ -1,0 +1,47 @@
+# CI for Nimbus: every push runs the fast tests (fake models, no API keys) and builds the image; pull requests also
+# run the quality gate with real models, using keys from the CI secret store.
+name: ci
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg17
+        env: {POSTGRES_USER: nimbus, POSTGRES_PASSWORD: nimbus, POSTGRES_DB: nimbus}
+        ports: ["5443:5432"]
+        options: --health-cmd "pg_isready -U nimbus" --health-interval 2s --health-retries 15
+      redis:
+        image: redis:8-alpine
+        ports: ["6390:6379"]
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      - run: uv sync --frozen
+      - run: uv run ruff check src tests
+      - run: uv run pytest -q  # fast: fake models, a temporary database, no keys
+
+  image:
+    runs-on: ubuntu-latest
+    needs: test
+    steps:
+      - uses: actions/checkout@v5
+      - uses: hadolint/hadolint-action@v3.1.0
+      - run: docker build -t nimbus-api .
+
+  quality-gate:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    needs: test
+    env:
+      MISTRAL_API_KEY: ${{ secrets.MISTRAL_API_KEY }}
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+    steps:
+      - uses: actions/checkout@v5
+      - uses: astral-sh/setup-uv@v7
+      - run: uv sync --frozen
+      - run: uv run pytest -q -m integration tests/test_reply_quality.py tests/test_mcp_servers.py
+      - run: uv run python scripts/eval_gate.py  # fails the build if the support reply's scores drop

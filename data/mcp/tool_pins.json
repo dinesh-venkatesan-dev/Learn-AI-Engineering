@@ -1,0 +1,15 @@
+{
+ "account_cancel_order": "4388d4a066da7cc0",
+ "account_check_refund": "5c031f0f2a3fc456",
+ "account_get_order": "759b4831f9e98133",
+ "account_my_notes": "9f0e3ff4a106dfb2",
+ "account_my_orders": "85520d0c0d684875",
+ "account_remember_note": "b3c016617a927c91",
+ "account_whoami": "319a12509acb0b09",
+ "support_cafe_menu_item": "10c77bd2c2a7b582",
+ "support_cancel_order": "c9621a76ad23beb2",
+ "support_check_refund": "d6acb4d9cf9f2c81",
+ "support_escalate_to_human": "fa14cf84af568b80",
+ "support_get_order": "5270045cfd8de86a",
+ "support_loyalty_points": "f8c01625ae50d7d3"
+}

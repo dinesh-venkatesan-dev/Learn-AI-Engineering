@@ -1,0 +1,205 @@
+{
+ "track": "mcp",
+ "id": "03",
+ "title": "MCP with LangChain & LangGraph",
+ "summary": "The client side: LangChain and LangGraph apps that use MCP servers. MCPAdapter turns server tools into LangChain tools. Apps read prompts and resources (always-on context, or loaded per request in a graph). Many servers sit behind one agent without name clashes. People approve what the server marks destructive, and answer what a server asks mid-call. Connections are kept open and tool lists cached. Agents are served as MCP tools in turn. The product gets a support agent that is purely an MCP client: its tools, its policy and its approval rules all come from the Nimbus server.",
+ "learn": [
+  "**MCPAdapter**: MCP tools as LangChain tools, called directly or by agents and graphs (async)",
+  "**Prompts and resources in apps**: prompts for any model, resources as always-on or per-request context, ResourcesAsTools",
+  "**Many servers**: MCPConfig with prefixed names and mixed transports, ClientGroup",
+  "**Humans in the loop**: approvals from annotations, elicitation as interrupts",
+  "**Connections and caching**, and **agents served over MCP** (including LangGraph Server's /mcp)"
+ ],
+ "flow": "support agent (create_agent) ── MCPAdapter ──→ Nimbus server\n  tools        ← list_tools()                          (support_* through the gateway)\n  policy       ← read_resource(policies/refunds) on every model call\n  approvals    ← tools the server marks destructiveHint → HumanInTheLoopMiddleware\n  questions    ← elicitation → LangGraph interrupt → the customer answers → resume",
+ "labs": [
+  {
+   "lab": "mcp.adapter",
+   "icon": "🔌",
+   "covers": [
+    "lc.l57",
+    "mcp.l14"
+   ],
+   "explain": "The Nimbus server over **stdio** through **MCPAdapter**: its tools as StructuredTools with **annotations**, called directly (content blocks, a ToolMessage with an **artifact**, an error), **async only**, and used by **create_agent** and a hand-built **ToolNode** graph.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.mcp.m03_clients",
+     "symbol": "adapter_tour",
+     "why": "The adapter.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.apps",
+   "icon": "🧩",
+   "covers": [
+    "mcp.l15"
+   ],
+   "explain": "The **support_reply** prompt run by a LangChain model, the refund policy as **always-on context**, a LangGraph node that **loads resources** per request, and **ResourcesAsTools**. The graph's answer misread 'processing' as 'packed': read the outputs.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.mcp.m03_clients",
+     "symbol": "prompts_resources_tour",
+     "why": "Prompts and resources.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.many-servers",
+   "icon": "🗂️",
+   "covers": [
+    "mcp.l16"
+   ],
+   "explain": "A café server and a roastery server that both offer **price**: stdio and HTTP in one **MCPConfig** (prefixed names), an agent choosing correctly, and a **ClientGroup** with one connection per server (one pinned to the legacy era).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.mcp.m03_clients",
+     "symbol": "many_servers_tour",
+     "why": "Two servers, one agent.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.hitl",
+   "icon": "✋",
+   "covers": [
+    "mcp.l17"
+   ],
+   "explain": "cancel_order **pauses for approval** because the server marks it destructive, then the server **asks the customer** to confirm (an interrupt); approved and rejected. Then a booking whose two questions become interrupts.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.mcp.client_agent",
+     "symbol": "build_mcp_agent",
+     "why": "Approvals from annotations.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.mcp.client_agent",
+     "symbol": "is_destructive",
+     "why": "Reading destructiveHint.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.connections",
+   "icon": "⚡",
+   "covers": [
+    "mcp.l18"
+   ],
+   "explain": "Calls with the adapter **closed** (17 ms each: a connection per call) and **open** (3 ms), **parallel** calls on one connection, and **tool-list caching** with the server's freshness hints.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.mcp.m03_clients",
+     "symbol": "connections_tour",
+     "why": "Connections and caching.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.agent-server",
+   "icon": "🤖",
+   "covers": [
+    "mcp.l19"
+   ],
+   "explain": "The Nimbus assistant as **one MCP tool** (ask_nimbus), used by a concierge agent (**agent-to-agent**); then **LangGraph Server's /mcp**, where every hosted graph is a tool with its input and output schemas as the interface.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.mcp.assistant_server",
+     "symbol": "_assistant",
+     "why": "The assistant behind the tool.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the support agent as an MCP client",
+  "summary": "The support agent connects to the Nimbus gateway and keeps no business knowledge of its own. Tools come from list_tools. The refund policy is a resource read into the system prompt on every model call, so a policy change reaches every agent without a redeploy. Approvals cover whatever tools the server marks destructive, and the server's mid-call questions pause the agent for the customer.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "agent",
+    "title": "Agent",
+    "icon": "🤖",
+    "tagline": "Everything from the server",
+    "explain": "build_mcp_agent reads tools, the policy and the approval rules from the server. The dynamic_prompt middleware fetches the policy fresh; the HumanInTheLoopMiddleware `when` predicate checks destructiveHint.",
+    "code": [
+     {
+      "module": "nimbus.mcp.client_agent",
+      "symbol": "build_mcp_agent",
+      "why": "The MCP client agent.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Keep business rules on the server: every agent and host that connects gets the same ones."
+    ]
+   },
+   {
+    "id": "serve",
+    "title": "Serve",
+    "icon": "🌐",
+    "tagline": "The assistant for other hosts",
+    "explain": "ask_nimbus wraps the router assistant as one MCP tool; server/assistant_graph.py exposes it through LangGraph Server's /mcp with question and customer_id in, answer out.",
+    "code": [
+     {
+      "module": "nimbus.mcp.assistant_server",
+      "symbol": "_assistant",
+      "why": "The assistant behind ask_nimbus.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "The customer id is an argument for now; MCP Module 4 takes it from the caller's token."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "20 requests",
+    "lab": "mcp.client-agent-eval",
+    "explain": "LangChain Module 3's 12 tool requests plus MCP Module 2's 8 policy questions, through an agent on the server's tools alone and through the production MCP agent.\n\n| | success | right facts | model calls | tokens | p50 |\n|---|---|---|---|---|---|\n| MCP tools only (Module 1) | 12/20 | 0.60 | 1.70 | 1,418 | 4.8 s |\n| **MCP agent: tools + live policy + approvals** | **19/20** | **1.00** | **1.65** | **1,552** | **4.9 s** |\n\nTools alone missed 7 of the 8 policy questions: it invented a \"3–5 business days\" refund time, a WhatsApp number and an email address, and told a customer an opened, torn bag can't be returned. The agent that reads the policy resource on every model call got all 8 right for 134 more tokens per request at the same latency. Both missed r09 (glass in a drink) on the tool check: the expected escalation call was not made as scored.",
+    "code": [
+     {
+      "module": "academy.labs.mcp.m03_clients",
+      "symbol": "evaluate_mcp_agent",
+      "why": "The evaluation.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Re-run whenever the server's tools, descriptions or resources change."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/mcp/client_agent.py",
+   "role": "The support agent as an MCP client"
+  },
+  {
+   "path": "src/nimbus/mcp/assistant_server.py",
+   "role": "The assistant as one MCP tool"
+  },
+  {
+   "path": "server/assistant_graph.py",
+   "role": "The assistant for LangGraph Server (and its /mcp)"
+  },
+  {
+   "path": "src/academy/labs/mcp/m03_clients.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Serve the graphs (also at /mcp)",
+   "cmd": "cd server && uv run langgraph dev"
+  }
+ ]
+}

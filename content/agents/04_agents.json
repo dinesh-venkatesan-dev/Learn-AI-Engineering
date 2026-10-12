@@ -1,0 +1,328 @@
+{
+ "track": "agents",
+ "id": "04",
+ "title": "Tool-calling agents",
+ "summary": "An agent is a loop: the model decides, tools run, the model reads their results, until it answers. This module builds that loop by hand, then with ToolNode and tools_condition. It covers what ToolNode does with parallel calls, errors, state and Command, and puts the agent inside a bigger workflow: code before it, code after it, business fields in state. It compares the two ways to end with structured output, and streams agents and graphs every way LangGraph offers, up to v3 event streaming. The Nimbus support agent becomes a support desk graph. Code loads the customer and decides the reply language, the agent works and must answer through a final_answer tool, and code files a ticket for the people on the support desk.",
+ "learn": [
+  "**An agent from scratch**: MessagesState, a model node, a tools node, the loop, and the prebuilt ToolNode and tools_condition",
+  "**ToolNode in depth**: parallel calls, the default error behaviour, handle_tool_errors, ToolRuntime, Command from a tool",
+  "**An agent inside a workflow**: business state, code steps before and after the agent loop",
+  "**Structured endings**: a respond node vs the schema as a tool, measured",
+  "**Streaming agents**: the stream modes, v2 chunks, tool-call chunks, reasoning, sub-agents, turning tokens off",
+  "**Streaming graphs**: tokens by node, filters by node and tag, progress events, subgraphs, v3 event streaming and transformers"
+ ],
+ "flow": "START → load_customer (code: profile, reply language)\n          → agent ⇄ tools        (tool_choice=\"any\"; tools read the customer from the context, record actions with Command)\n                 └─(final_answer called)→ file_ticket (code: ticket, needs_human, flags) → END\n          → respond (fallback: the agent stopped without final_answer) ↗",
+ "labs": [
+  {
+   "lab": "agents.agent-from-scratch",
+   "icon": "🔁",
+   "covers": [
+    "lc.l50",
+    "lg.l21"
+   ],
+   "explain": "One question (an order's status and its loyalty points) through a **hand-built** agent loop, **ToolNode + tools_condition** and **create_agent**, with the trace of every message.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m04_agents",
+     "symbol": "hand_built_agent",
+     "why": "The loop by hand.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m04_agents",
+     "symbol": "prebuilt_agent",
+     "why": "The prebuilt pieces.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.tool-node",
+   "icon": "🧰",
+   "covers": [
+    "lg.l22"
+   ],
+   "explain": "ToolNode on hand-written calls, no model: three 1-second calls take 1 s, an exception **crashes** the graph by default (bad arguments don't), **handle_tool_errors** turns it into a message, **ToolRuntime** reads the customer from state, a tool returns a **Command**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m04_agents",
+     "symbol": "default_errors",
+     "why": "The default.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m04_agents",
+     "symbol": "state_access",
+     "why": "ToolRuntime and Command.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.agent-in-workflow",
+   "icon": "🏗️",
+   "covers": [
+    "lg.l23"
+   ],
+   "explain": "The production desk on three requests: **code before** the agent (profile, reply language), the agent loop, **code after** (a ticket with needs_human and flags).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m04_agents",
+     "symbol": "steps_before_the_agent",
+     "why": "Before the agent.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.support.desk",
+     "symbol": "build_support_desk",
+     "why": "The desk.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.structured-ending",
+   "icon": "🏁",
+   "covers": [
+    "lg.l24"
+   ],
+   "explain": "The desk with a **respond node** (option A) and with a **final_answer tool** (option B) on six scenarios where it matters. A: 3/6, with the agent saying \"I've escalated\" without escalating. B: 6/6, and fewer model calls (2.5 vs 3.3).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m04_agents",
+     "symbol": "option_b_schema_as_tool",
+     "why": "The schema as a tool.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.agent-streaming",
+   "icon": "📡",
+   "covers": [
+    "lc.l22",
+    "lc.l23"
+   ],
+   "explain": "A menu question streamed as **updates, messages, values, custom**, several at once, **v2 chunks**, tool-call chunks added up, a **reasoning** model's thinking before its answer, a front desk with a **barista sub-agent** (who is talking), **stream_events v3**, and token streaming turned off for one model.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m04_agents",
+     "symbol": "tool_call_chunks",
+     "why": "Assembling tool calls.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m04_agents",
+     "symbol": "who_is_talking",
+     "why": "Sub-agents by name.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.graph-streaming",
+   "icon": "🛰️",
+   "covers": [
+    "lg.l25"
+   ],
+   "explain": "The desk streamed: chunks by **node**, filtered by node and by **tag**, **progress events** with their timing, the desk **nested** in a parent graph, and how agent and graph streams differ: the desk's reply streams as final_answer's **JSON arguments**, not text.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m04_agents",
+     "symbol": "progress_events",
+     "why": "Progress with timing.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.event-streaming",
+   "icon": "🎛️",
+   "covers": [
+    "lg.l26"
+   ],
+   "explain": "**stream_events(version=\"v3\")** on the desk: .messages and .output, .subgraphs, **interleave()**, the raw protocol events, a **StreamTransformer** for progress, and **ToolCallTransformer**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m04_agents",
+     "symbol": "progress_transformer",
+     "why": "A custom view.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m04_agents",
+     "symbol": "tool_call_view",
+     "why": "Tool executions as a view.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the Nimbus support desk",
+  "summary": "Support agent v1 (create_agent, LangChain Module 4) becomes a LangGraph workflow. Code loads the customer's profile and decides the reply language. The agent loop runs with tool_choice=\"any\" and answers by calling final_answer. Code files a ticket: who, which orders, what was done, and whether a person must follow up (always when the agent escalated or claimed an action no tool ran). Every node emits a progress event for the UI.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "before",
+    "title": "Before the agent",
+    "icon": "🪪",
+    "tagline": "Code decides what code can",
+    "explain": "`load_customer` reads the profile from the order system and `reply_language` decides the reply language from the message itself. The prompt then says \"in English\" instead of \"in the customer's language\". While this module was built, ministral answered English questions from customers with Indian names in Hindi, and every rewording that mentioned language made it worse.",
+    "code": [
+     {
+      "module": "nimbus.support.desk",
+      "symbol": "reply_language",
+      "why": "The language, decided in code.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.support.desk",
+      "symbol": "system_prompt",
+      "why": "The prompt, built from raw state.",
+      "notes": [
+       {
+        "match": "prompt = prompt.replace(\"in the customer's language\", f\"in {language}\") + f\" They {subscription}.\"",
+        "text": "The model is told the language, not asked to guess it."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Anything code can decide (language, account facts, permissions) shouldn't be left to the model."
+    ]
+   },
+   {
+    "id": "loop",
+    "title": "The loop",
+    "icon": "🔁",
+    "tagline": "Answer through a tool",
+    "explain": "The agent must call a tool every turn (`tool_choice=\"any\"`) and finishes by calling `final_answer`, whose arguments are the SupportOutcome schema. With a respond node instead (option A), the agent stopped on plain text: \"I've escalated this\" with no escalation, and an invented order number for an insects complaint. That was 3/6 against 6/6 in the structured-ending lab.",
+    "code": [
+     {
+      "module": "nimbus.support.desk",
+      "symbol": "build_support_desk",
+      "why": "The desk graph.",
+      "notes": [
+       {
+        "match": "agent_model = model.bind_tools(tools, tool_choice=\"any\")  # a tool every turn: the answer is a tool too",
+        "text": "The answer is a tool call."
+       },
+       {
+        "match": "tools = [*base, *extra, final_answer]",
+        "text": "final_answer is a tool with the SupportOutcome schema as its arguments."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Keep the respond node as a fallback for when the step budget runs out: a run must always end with an outcome."
+    ]
+   },
+   {
+    "id": "after",
+    "title": "After the agent",
+    "icon": "🎫",
+    "tagline": "A ticket, routed by code",
+    "explain": "`file_ticket` builds the record the support desk works from. needs_human is true when the model says so, when the agent escalated, or when `unbacked_claims` finds a reply claiming an action that never ran.",
+    "code": [
+     {
+      "module": "nimbus.support.desk",
+      "symbol": "unbacked_claims",
+      "why": "Claims without actions.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.support.desk",
+      "symbol": "Ticket",
+      "why": "The ticket.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Route on what happened (the actions in state), not on what the model says happened."
+    ]
+   },
+   {
+    "id": "try",
+    "title": "Try it",
+    "icon": "▶️",
+    "tagline": "From the command line",
+    "explain": "`uv run nimbus support desk --customer c-1042 \"When is my next coffee delivery?\"` prints the progress events as the desk works, then the ticket.",
+    "code": [
+     {
+      "module": "nimbus.cli",
+      "symbol": "run_desk",
+      "why": "The command.",
+      "notes": [
+       {
+        "match": "for mode, data in desk.stream(payload, config, stream_mode=[\"custom\", \"values\"], context=context):",
+        "text": "Progress and the final state from one stream."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "The customer id comes from the login (the context), never from the message."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "The desk vs v1, 15 scenarios",
+    "lab": "agents.support-desk-eval",
+    "explain": "LangChain Module 4's 10 scenarios plus 5 harder ones: two requests at once, an order that doesn't exist, a pause longer than allowed (in Hinglish), points for an amount, a refund for a cancelled order. Scored on tools, actions, outcome and the facts in the reply.\n\n| | success | right tools | right actions | right outcome | right facts | model calls | tokens | p50 |\n|---|---|---|---|---|---|---|---|---|\n| v1 · create_agent | 0.87 | 1.00 | 1.00 | 1.00 | 0.87 | 2.60 | 2,854 | 5.2 s |\n| **desk** | **1.00** | 1.00 | 1.00 | 1.00 | **1.00** | **2.40** | **2,747** | **5.2 s** |\n\nMeasured on the final desk (with the Module 5 and 6 changes, approvals off). One of v1's two misses was the scorer's: \"I don't see a subscription to pause\" is right, and the pattern now accepts it (13 → 14 of 15). The other is real and happened in every run: asked about an order that doesn't exist, v1 answered about the customer's latest order instead. The desk's prompt says to report a failed lookup plainly. Earlier runs while the desk was being built: v1 0.93 vs desk 0.87 (the desk answered in Hindi, see Before the agent) and 0.93 vs 1.00. Answering through final_answer folds the outcome into the agent's last turn, so the desk makes fewer calls.",
+    "code": [
+     {
+      "module": "academy.labs.agents.m04_agents",
+      "symbol": "evaluate_desk",
+      "why": "The evaluation.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.support.agent_eval",
+      "symbol": "run_desk_scenario",
+      "why": "The desk, scored by v1's rules.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Add every failure from production to the scenarios (h01–h05 started that way here)."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/support/desk.py",
+   "role": "The support desk graph: profile, language, agent loop, final_answer, ticket"
+  },
+  {
+   "path": "src/nimbus/support/agent_eval.py",
+   "role": "Scenario scoring, for v1 and the desk"
+  },
+  {
+   "path": "data/eval/agent_scenarios_hard.json",
+   "role": "Five harder scenarios"
+  },
+  {
+   "path": "src/academy/labs/agents/m04_agents.py",
+   "role": "The labs"
+  },
+  {
+   "path": "tests/test_desk.py",
+   "role": "Language, prompt and claim checks"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Ask the desk",
+   "cmd": "uv run nimbus support desk --customer c-1042 \"When is my next coffee delivery?\""
+  },
+  {
+   "label": "Desk tests",
+   "cmd": "uv run pytest tests/test_desk.py"
+  }
+ ]
+}

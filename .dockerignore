@@ -1,0 +1,8 @@
+.venv
+.cache
+.state
+.env
+**/__pycache__
+frontend/node_modules
+tests
+server/.langgraph_api

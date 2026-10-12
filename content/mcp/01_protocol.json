@@ -1,0 +1,229 @@
+{
+ "track": "mcp",
+ "id": "01",
+ "title": "Protocol foundations",
+ "summary": "Every AI app used to wire every tool by hand. **MCP** (Model Context Protocol) is one protocol between AI **hosts** (agents, IDEs, desktop apps) and **servers** that offer tools, resources and prompts. Write the Nimbus support tools once as an MCP server, and any host can use them. This module covers the roles, a first server and client, the transports, and the JSON-RPC messages underneath. It ends by measuring the support desk's tools served over MCP against the same tools in-process.",
+ "learn": [
+  "Why MCP: host, client and server, and what a server offers (tools, resources, prompts)",
+  "**Your first server and client**: `FastMCP` + `@mcp.tool`, what a client sees, three views of a result, errors",
+  "**Transports**: in memory (tests), stdio (local hosts), Streamable HTTP (shared servers), and protocol eras",
+  "**The protocol on the wire**: JSON-RPC requests, responses, the two kinds of failure, sessions"
+ ],
+ "flow": "HOST (agent / IDE)  →  CLIENT  ──transport──→  SERVER (src/nimbus/mcp/server.py)\n                                                    ├─ get_order · cafe_menu_item      (typed results)\n                                                    ├─ check_refund · loyalty_points   (the agents' own tools)\n                                                    └─ escalate_to_human\ntransports: in memory (tests) · stdio (a local host starts it) · HTTP at /mcp (shared, with /health)",
+ "labs": [
+  {
+   "lab": "mcp.why",
+   "icon": "🤝",
+   "covers": [
+    "mcp.l01"
+   ],
+   "explain": "Integrations by hand (apps × tools) against MCP (apps + tools), a server offering a **tool**, a **resource** and a **prompt**, and the Nimbus support server plugged into an **agent with no glue code**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.mcp.m01_protocol",
+     "symbol": "three_kinds_of_things",
+     "why": "Tools, resources, prompts.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.mcp.m01_protocol",
+     "symbol": "no_glue_agent",
+     "why": "An agent on MCP tools.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.first-server",
+   "icon": "🔌",
+   "covers": [
+    "mcp.l02"
+   ],
+   "explain": "The **Nimbus support MCP server** (`src/nimbus/mcp/server.py`) offers the support desk's lookups (orders, the café menu, refunds, points, escalation). The lab calls the same tool three ways: as a **plain Python function**, through **MCP in memory**, and through **MCP over stdio** (a separate process), and measures what each costs.\n\nYou'll see exactly what a client receives: the tool list with JSON schemas built from type hints, and every result in three views (`content` for a model, `structured_content` for programs, `data` for Python).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.mcp.server",
+     "symbol": "",
+     "why": "The Nimbus support MCP server: production code the MCP track grows.",
+     "notes": [
+      {
+       "match": "mcp = FastMCP(",
+       "text": "The server: a name and instructions hosts can show the model."
+      },
+      {
+       "match": "@mcp.tool",
+       "text": "A function becomes a tool: name, docstring and type hints are its public contract."
+      },
+      {
+       "match": "raise ToolError(",
+       "text": "A message the client (and its model) receives as an error result."
+      },
+      {
+       "match": "return Order.model_validate(order)",
+       "text": "A Pydantic return type: structured output with a schema, and internal fields left out."
+      },
+      {
+       "match": "mcp.run()",
+       "text": "stdio by default: a host starts this file and talks over stdin/stdout."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.mcp.m01_protocol",
+     "symbol": "first_server",
+     "why": "The lab: three ways to call one tool.",
+     "notes": [
+      {
+       "match": "memory = asyncio.run(_time_transport(nimbus_server.mcp",
+       "text": "In memory: the server object lives in this process."
+      },
+      {
+       "match": "stdio = asyncio.run(_time_transport(_quiet_stdio(SERVER_FILE)",
+       "text": "stdio: the client starts the server as a subprocess."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "mcp.transports",
+   "icon": "🚚",
+   "covers": [
+    "mcp.l03"
+   ],
+   "explain": "The same question **in memory** (this process), over **stdio** (a child process that doesn't see your environment unless you pass it), and over **HTTP** by two clients at once; then the **protocol era** each client negotiates.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.mcp.m01_protocol",
+     "symbol": "stdio",
+     "why": "stdio.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.mcp.m01_protocol",
+     "symbol": "protocol_eras",
+     "why": "Eras.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "mcp.wire",
+   "icon": "🔌",
+   "covers": [
+    "mcp.l04"
+   ],
+   "explain": "The Nimbus server over HTTP, spoken to with plain httpx: **discover, list, call**, a **tool failure** vs a **protocol failure**, and a **legacy session**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.mcp.m01_protocol",
+     "symbol": "modern_call",
+     "why": "A request by hand.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.mcp.m01_protocol",
+     "symbol": "legacy_session",
+     "why": "A legacy session.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the support tools as an MCP server",
+  "summary": "The Nimbus support MCP server offers all five of the support desk's lookups. It reuses the agents' own LangChain tools, so the refund policy and the points rule live in one place. Locally it runs over stdio, and as a shared web service at /mcp with a /health check. The evaluation answers LangChain Module 3's tool requests with the native tools and with the same tools over MCP.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "server",
+    "title": "Server",
+    "icon": "🛠️",
+    "tagline": "One source of truth",
+    "explain": "Each MCP tool calls the matching LangChain tool's function; a ToolException becomes a ToolError the client's model can read. Annotations mark the read-only tools for hosts.",
+    "code": [
+     {
+      "module": "nimbus.mcp.server",
+      "symbol": "_run",
+      "why": "Calling the agents' tools.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Never fork business logic into a second copy for MCP: serve the code the agents already trust."
+    ]
+   },
+   {
+    "id": "http",
+    "title": "HTTP",
+    "icon": "🌐",
+    "tagline": "A shared server",
+    "explain": "`python src/nimbus/mcp/server.py --http 8765` serves /mcp for many clients, with /health for load balancers and deploy checks.",
+    "code": [
+     {
+      "module": "academy.labs.mcp.m01_protocol",
+      "symbol": "nimbus_http",
+      "why": "Starting it and waiting for /health.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Production MCP adds auth, scopes and deployment: MCP Module 4."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "Native vs MCP, 12 requests",
+    "lab": "mcp.support-server-eval",
+    "explain": "The same model answers the 12 tool requests with the native tools, with the tools over stdio, and over HTTP.\n\n| tools | success | right tools | right facts | model calls | tokens | p50 |\n|---|---|---|---|---|---|---|\n| **native LangChain tools** | **12/12** | 1.00 | 1.00 | 1.83 | 1,342 | 5.0 s |\n| MCP over stdio | 10/12 | 0.92 | 0.83 | 1.92 | 1,423 | 5.1 s |\n| MCP over HTTP | 11/12 | 0.92 | 1.00 | 1.92 | 1,421 | 4.9 s |\n\nLatency is the model's, not the protocol's: all three take about 5 s. Over MCP the model twice made a choice it didn't make with the native tools. On the glass-in-a-drink report it called check_refund before escalating. On \"do you sell coffee grinders?\" it invented that Nimbus sells only pre-ground coffee. Two things differ. The MCP tools' descriptions and schemas are rebuilt from the server's signatures, and MCP has no return_direct, so after escalate_to_human the model keeps writing. With 12 requests, one or two misses is also within run-to-run variation. The decision: the support tools ship as an MCP server for hosts (an IDE, a desktop app, another team's agent), while Nimbus's own agents keep the native tools in-process.",
+    "code": [
+     {
+      "module": "academy.labs.mcp.m01_protocol",
+      "symbol": "evaluate_over_mcp",
+      "why": "The evaluation.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.support.assistant",
+      "symbol": "answer_with_tools_async",
+      "why": "The async tool loop (MCP tools are async).",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Re-run when the server changes: the tool descriptions are part of what the model sees."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/mcp/server.py",
+   "role": "The Nimbus support MCP server (five tools, stdio and HTTP)"
+  },
+  {
+   "path": "src/nimbus/support/assistant.py",
+   "role": "The tool loop, sync and async"
+  },
+  {
+   "path": "src/academy/labs/mcp/m01_protocol.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "List the server's tools",
+   "cmd": "uv run fastmcp list src/nimbus/mcp/server.py"
+  },
+  {
+   "label": "Call a tool from the terminal",
+   "cmd": "uv run fastmcp call src/nimbus/mcp/server.py get_order order_id=NC-12093"
+  },
+  {
+   "label": "Serve it over HTTP",
+   "cmd": "uv run python src/nimbus/mcp/server.py --http 8765"
+  }
+ ]
+}

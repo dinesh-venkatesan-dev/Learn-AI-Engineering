@@ -1,0 +1,16 @@
+[
+ {"id": "k1", "kind": "knowledge", "customer_id": "c-1042", "question": "When do orders ship for free?", "answer_regex": "1,?500"},
+ {"id": "k2", "kind": "knowledge", "customer_id": "c-1042", "question": "Do loyalty points expire?", "answer_any": ["12 months", "twelve months", "a year", "one year"]},
+ {"id": "k3", "kind": "knowledge", "customer_id": "c-3301", "question": "What discount do subscriptions give?", "answer_numbers": [15]},
+ {"id": "k4", "kind": "knowledge", "customer_id": "c-5005", "question": "Is there Wi-Fi in your cafés?", "answer_any": ["wi-fi", "wifi"]},
+ {"id": "a1", "kind": "account", "customer_id": "c-1042", "question": "Where is my latest order?", "answer_any": ["delivered"]},
+ {"id": "a2", "kind": "account", "customer_id": "c-1042", "question": "When is my next coffee delivery?", "answer_regex": "28(th)? march|march 28|2026-03-28"},
+ {"id": "a3", "kind": "account", "customer_id": "c-7007", "question": "How many loyalty points will my current order earn?", "answer_numbers": [209]},
+ {"id": "c1", "kind": "cafe", "customer_id": "c-8080", "question": "Which café drinks are vegan?", "answer_all": ["oat latte", "cold brew"]},
+ {"id": "c2", "kind": "cafe", "customer_id": "c-8080", "question": "Does the banana bread contain nuts?", "answer_all": ["nut", "cross-contact"]},
+ {"id": "c3", "kind": "cafe", "customer_id": "c-2210", "question": "Can you quote coffee catering for 30 people next Friday?", "answer_numbers": [3600]},
+ {"id": "m1", "kind": "multi", "customer_id": "c-5005", "question": "Where is my order NC-78123, and is the cold brew vegan?", "answer_all": ["shipped"], "answer_regex": "cold brew[^.]{0,40}\\b(is|are)\\b(?![^.]{0,25}\\b(not|n't)\\b)[^.]{0,25}vegan"},
+ {"id": "m2", "kind": "multi", "customer_id": "c-6060", "question": "How long do I have to return unopened beans, and can I return NC-90112?", "answer_numbers": [14], "answer_any": ["eligible", "can be returned", "can return", "you can", "yes"]},
+ {"id": "m3", "kind": "multi", "customer_id": "c-1042", "question": "What time does the Indiranagar café open, and when is my next delivery?", "answer_any": ["28 march", "march 28", "28th march", "2026-03-28"], "answer_all": ["7"]},
+ {"id": "s1", "kind": "small talk", "customer_id": "c-3301", "question": "Hi! Thanks for the help last week.", "answer_any": []}
+]

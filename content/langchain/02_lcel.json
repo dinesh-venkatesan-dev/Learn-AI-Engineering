@@ -1,0 +1,391 @@
+{
+ "track": "langchain",
+ "id": "02",
+ "title": "Chains with LCEL",
+ "summary": "Composing steps into **chains** with the LangChain Expression Language: Runnables and `|`, parallel steps and passthrough, Python functions as steps, **routing**, **retries, fallbacks and config**, and **callbacks and event streams**. The production path rebuilds Nimbus support as **one pipeline** with routing, a fallback provider and live events, and proves the fallback in an outage drill.",
+ "learn": [
+  "**Runnables and `|`**: one interface for prompts, models and parsers, and chains that get batch and stream for free",
+  "**RunnableParallel, RunnablePassthrough, assign, itemgetter**: shaping data between steps, measured",
+  "**RunnableLambda and `@chain`**: plain Python functions as steps",
+  "**Routing**: a classifier, then a function or a RunnableBranch",
+  "**with_retry, with_fallbacks, RunnableConfig, configurable_fields**",
+  "**Callbacks and astream_events**: seeing every step while it runs"
+ ],
+ "flow": "{\"ticket\"} → assign(triage = prompt | model.with_structured_output(TicketTriage))   (retry on bad JSON · fallback provider)\n          → assign(reply = route(...))   safety → fixed message · otherwise prompt | model | StrOutputParser (fallback provider)\n          → {\"ticket\", \"triage\", \"reply\"}        callbacks record every call · astream_events streams it",
+ "labs": [
+  {
+   "lab": "lc.runnables",
+   "icon": "🔗",
+   "covers": [
+    "lc.l11"
+   ],
+   "explain": "A prompt, a model and a parser are all **Runnables**: they share one interface (`invoke`, `batch`, `stream` and the async versions), and the output of one is exactly what the next one takes. The lab first passes data between them by hand, then writes the same thing as `prompt | model | parser`, a **RunnableSequence**, and shows that the chain gets `batch()` and `stream()` for free.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m02_lcel",
+     "symbol": "runnables",
+     "why": "The lab: by hand, then piped.",
+     "notes": [
+      {
+       "match": "chain, piped = the_same_with_a_pipe(model, ticket)",
+       "text": "The piped chain returns the same summary as the three manual calls."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.parallel",
+   "icon": "🔀",
+   "covers": [
+    "lc.l12"
+   ],
+   "explain": "Real chains shape data between steps. **RunnableParallel** runs several steps on the same input at the same time and returns a dict; a **plain dict** inside a chain means the same. **RunnablePassthrough** keeps the input next to computed values, **`.assign()`** adds keys to the input dict, and **`itemgetter`** hands a step just the key it needs. The lab times two independent steps in parallel against running them one after the other.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m02_lcel",
+     "symbol": "parallel",
+     "why": "The lab: parallel vs sequential, then each shaping tool.",
+     "notes": [
+      {
+       "match": "together = run_in_parallel(model, ticket)",
+       "text": "Both branches start together: the total is roughly the slower branch, not the sum."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.lambda",
+   "icon": "λ",
+   "covers": [
+    "lc.l13"
+   ],
+   "explain": "Any Python function can be a chain step. **RunnableLambda** wraps it (it gains invoke, batch, stream...), and a plain function piped next to a Runnable is wrapped automatically. A step takes exactly **one input**, so pass a dict when it needs several values. **`@chain`** lets you write multi-step logic (if/else, early returns) as normal Python and still get a Runnable.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m02_lcel",
+     "symbol": "lambda_lab",
+     "why": "The lab: functions as steps.",
+     "notes": [
+      {
+       "match": "with_id, without_id = write_steps_as_python(model, ticket)",
+       "text": "@chain: one path calls the model, the other answers without it."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.routing",
+   "icon": "🚦",
+   "covers": [
+    "lc.l14"
+   ],
+   "explain": "Different inputs need different handling. A **classifier chain** (structured output with a Literal) decides the route; then either a **function that returns a chain** (the recommended way: any logic, easy to test) or a **RunnableBranch** of (condition, runnable) pairs runs the right one. The lab routes four labelled tickets to the orders, subscriptions, safety or general team, checks the routes, and gives the safety ticket a fixed message with no model call.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m02_lcel",
+     "symbol": "routing",
+     "why": "The lab: classify, then route two ways.",
+     "notes": [
+      {
+       "match": "team = classifier.invoke({\"ticket\": text}).team",
+       "text": "The route is checked against the expected team for each ticket."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.reliability",
+   "icon": "🛟",
+   "covers": [
+    "lc.l15"
+   ],
+   "explain": "Making a chain robust and configurable: **`with_retry()`** re-runs a step that fails transiently, **`with_fallbacks()`** switches to a backup runnable when the primary fails (here a different provider, while Mistral is \"down\"), **RunnableConfig** carries a run name, tags and metadata to every step (and a step can read them), and **`configurable_fields()`** changes a model setting per call without rebuilding the chain.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m02_lcel",
+     "symbol": "reliability",
+     "why": "The lab: each technique, timed.",
+     "notes": [
+      {
+       "match": "reply = fall_back_to_another_provider()",
+       "text": "Mistral is pointed at an address where nothing listens: a real connection failure, then Groq answers."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "lc.callbacks",
+   "icon": "📡",
+   "covers": [
+    "lc.l16"
+   ],
+   "explain": "Seeing inside a running chain. A **callback handler** has methods that are called at each start and end (chain, model, parser); passed in **config**, every step of the chain reports to it. **`astream_events`** gives the same events as an async stream you can loop over, which is how a UI shows progress and tokens live.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.langchain.m02_lcel",
+     "symbol": "callbacks",
+     "why": "The lab: one handler, one event stream.",
+     "notes": [
+      {
+       "match": "streamed = stream_every_event(model, ticket)",
+       "text": "Counted by kind: one event per start and end, and one per streamed token."
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus support pipeline v2",
+  "summary": "One LCEL pipeline from a customer message to a routed reply: triage, a route that keeps safety tickets away from generated text, a reply in the customer's language, a fallback provider behind every model step, every call recorded, and the reply streamed. The outage drill proves the fallback before a real outage does.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "chain",
+    "title": "The chain",
+    "icon": "🔗",
+    "tagline": "Triage → route → reply, as one Runnable",
+    "explain": "Module 1 called the model twice from Python (triage, then reply). v2 is one **LCEL pipeline**: `{\"ticket\"}` goes in, `{\"ticket\", \"triage\", \"reply\"}` comes out. Because it's a Runnable, the web service gets `invoke`, `batch`, `stream`, `astream_events` and the async versions without extra code, and every step shows up by name in traces.",
+    "code": [
+     {
+      "module": "nimbus.support.pipeline",
+      "symbol": "build_pipeline",
+      "why": "The whole pipeline.",
+      "notes": [
+       {
+        "match": "RunnablePassthrough.assign(triage=triage.with_config(",
+        "text": "assign keeps the ticket and adds the triage next to it."
+       },
+       {
+        "match": "| RunnablePassthrough.assign(reply=RunnableLambda(route",
+        "text": "Then the reply, added the same way."
+       },
+       {
+        "match": ".with_config(run_name=\"support_pipeline\")",
+        "text": "One name for the whole run in traces and logs."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.pipeline",
+      "symbol": "support_pipeline",
+      "why": "Built from settings: model, fallback, prompt version, method.",
+      "notes": [
+       {
+        "match": "get_chat_model(s, role=\"fallback\")",
+        "text": "The backup provider is configuration too."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Build the pipeline once at start-up and reuse it: it holds no per-request state.",
+     "Give every step a name (`run_name`): traces and metrics are useless when every step is called RunnableSequence."
+    ]
+   },
+   {
+    "id": "route",
+    "title": "Routing",
+    "icon": "🚦",
+    "tagline": "Safety tickets never get generated text",
+    "explain": "After triage, `route()` picks the next step: tickets about allergies or contamination get a **fixed, human-approved message** (no model call, so nothing can be generated wrong) and are escalated; everything else gets a drafted reply in the customer's language.",
+    "code": [
+     {
+      "module": "nimbus.support.pipeline",
+      "symbol": "build_pipeline",
+      "why": "The route function inside the pipeline.",
+      "notes": [
+       {
+        "match": "fixed = FIXED_REPLIES.get(x[\"triage\"].category)",
+        "text": "A category with an approved message skips the model entirely."
+       },
+       {
+        "match": "return RunnableLambda(lambda _: fixed, name=\"fixed_reply\") if fixed else reply",
+        "text": "Return a Runnable: LCEL runs it on the same input."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.pipeline",
+      "symbol": "reply_step",
+      "why": "The reply chain, fed from the triage.",
+      "notes": [
+       {
+        "match": "NEXT_STEPS[triage.category]",
+        "text": "The policy for this category goes into the prompt."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Keep fixed replies in a reviewed table, versioned with the code: legal and safety teams sign them off.",
+     "Route on validated fields only (`category`, `urgency`), never on free text the model wrote."
+    ]
+   },
+   {
+    "id": "resilience",
+    "title": "Resilience",
+    "icon": "🛟",
+    "tagline": "Retry what can succeed, fall back for outages",
+    "explain": "Two different failures, two different fixes. A **reply that didn't parse** often parses on a second try: the triage step retries once (`with_retry`). A **provider outage** isn't fixed by retrying (the client already retried timeouts and 429s): each model step falls back to the **same step on another provider** (`with_fallbacks`).",
+    "code": [
+     {
+      "module": "nimbus.support.pipeline",
+      "symbol": "triage_step",
+      "why": "Triage, retried on a bad reply, emitted once.",
+      "notes": [
+       {
+        "match": "retry_if_exception_type=(OutputParserException, ValidationError), stop_after_attempt=2",
+        "text": "Only parse failures are retried here; network errors are the client's job."
+       },
+       {
+        "match": "def complete(x: dict, config: RunnableConfig) -> TicketTriage:",
+        "text": "Streamed, structured output would emit partial objects that LCEL can't merge: run triage as one call."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.pipeline",
+      "symbol": "build_pipeline",
+      "why": "The fallbacks.",
+      "notes": [
+       {
+        "match": "triage = triage.with_fallbacks([triage_step(fallback, prompt_version, method)])",
+        "text": "The same step on the backup model, tried only if the primary fails."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Use a backup on a **different provider**: a second model from the same provider fails in the same outage.",
+     "Check the backup with the same scorecard as the primary before relying on it (the drill does).",
+     "We hit a real LCEL gotcha: streaming a chain that contains structured output can fail with partial objects; run such steps as one call (`triage_once`)."
+    ]
+   },
+   {
+    "id": "observe",
+    "title": "Observability",
+    "icon": "📡",
+    "tagline": "Every call recorded, the reply streamed",
+    "lab": "lc.pipeline-one",
+    "explain": "`run()` attaches a **callback handler** (`UsageRecorder`) and tags the run with the ticket id, so every model call is recorded with the model that actually answered, its tokens and its time. For the live UI, `stream_events()` uses **astream_events**: the triage arrives as soon as it's decided, then the reply token by token.\n\n**Run it** to see the timeline of one ticket.",
+    "code": [
+     {
+      "module": "nimbus.llm.usage",
+      "symbol": "UsageRecorder",
+      "why": "A callback that records each model call.",
+      "notes": [
+       {
+        "match": "def on_llm_end(self, response, *, run_id: UUID, **kwargs) -> None:",
+        "text": "Called when each model call ends: model name, tokens, elapsed time."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.pipeline",
+      "symbol": "run",
+      "why": "One ticket, recorded and tagged.",
+      "notes": [
+       {
+        "match": "config: RunnableConfig = {\"callbacks\": [recorder], \"tags\": [\"support\"], \"metadata\": {\"ticket_id\": ticket_id}}",
+        "text": "Callbacks and metadata in config reach every step."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.support.pipeline",
+      "symbol": "stream_events",
+      "why": "What the live UI consumes.",
+      "notes": [
+       {
+        "match": "elif event[\"event\"] == \"on_chat_model_stream\" and \"reply\" in event.get(\"tags\", []):",
+        "text": "Only the reply's tokens, picked out by the tag the route step set."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Export what `UsageRecorder` sees to metrics: calls, tokens and cost per request, and the share answered by the fallback (it should be near zero).",
+     "LangSmith receives the same runs with the same names, tags and metadata (Shipping to production, Module 3)."
+    ]
+   },
+   {
+    "id": "drill",
+    "title": "Outage drill",
+    "icon": "🧯",
+    "tagline": "Prove the fallback works before you need it",
+    "lab": "lc.pipeline-drill",
+    "explain": "The same labelled tickets under four conditions: healthy; Mistral down with no fallback; Mistral down with the Groq fallback; healthy with the fallback ready. \"Down\" means Mistral's endpoint is pointed at an address where nothing listens, which is exactly what a client sees in an outage. The scorecard shows success rate, triage accuracy, latency, tokens and cost, and which model answered each call. Every run is added to `.state/pipeline_drills.jsonl`.",
+    "code": [
+     {
+      "module": "nimbus.support.resilience",
+      "symbol": "drill",
+      "why": "Run and score one condition.",
+      "notes": [
+       {
+        "match": "success=sum(1 for _, r in pairs if r.triage is not None and r.reply) / n,",
+        "text": "Success = a triage AND a reply: what the customer experiences."
+       },
+       {
+        "match": "answered_by=Counter(c.model for c in calls),",
+        "text": "Which model produced each call: proof the fallback ran (or didn't)."
+       }
+      ]
+     },
+     {
+      "module": "academy.labs.langchain.m02_lcel",
+      "symbol": "pipeline_drill",
+      "why": "The four conditions.",
+      "notes": [
+       {
+        "match": "down = init_chat_model(s.chat_model, model_provider=s.chat_provider, endpoint=\"http://127.0.0.1:9\", max_retries=0)",
+        "text": "A real connection failure, without waiting for a real outage."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Run the drill on a schedule (and after any change to models or prompts): a fallback that was never exercised is a guess.",
+     "Alert on the fallback share: if it rises, the primary is degraded even when nothing has failed yet."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/support/pipeline.py",
+   "role": "build_pipeline(): triage → route → reply, retries, fallbacks; run(); stream_events()"
+  },
+  {
+   "path": "src/nimbus/support/resilience.py",
+   "role": "The outage drill and its scorecard"
+  },
+  {
+   "path": "src/nimbus/llm/usage.py",
+   "role": "UsageRecorder: a callback that records every model call"
+  },
+  {
+   "path": "src/nimbus/llm/models.py",
+   "role": "The new fallback role (a second provider)"
+  },
+  {
+   "path": "src/academy/labs/langchain/m02_lcel.py",
+   "role": "The labs on this page"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Run the tests",
+   "cmd": "uv run pytest"
+  },
+  {
+   "label": "The course app",
+   "cmd": "uv run academy"
+  }
+ ]
+}

@@ -1,0 +1,283 @@
+{
+ "track": "agents",
+ "id": "10",
+ "title": "Deep agents: memory, skills & control",
+ "summary": "The rest of the deep-agent harness, and the capstone that uses all of it. An AGENTS.md the agent always has and can update; skills read only when a task needs them; big tool results and long conversations kept under control; pauses before actions a person should check; typed results and per-run context for application code; the harness customised (fewer tools, your middleware, provider profiles); and serving. The capstone is Nimbus's weekly ops review by one deep agent: house rules in memory, the procedure as a versioned skill, two analysts, every email approved by a person, a typed result for code. It is measured against the same agent with everything pasted into its prompt.",
+ "learn": [
+  "**Memory**: AGENTS.md in every system prompt, seeded from code, updated by the agent",
+  "**Skills**: descriptions always, instructions on demand, from a versioned folder",
+  "**Context management**: evicted tool results, summarisation, compaction",
+  "**Human in the loop**: interrupt_on, approve / edit / reject decisions",
+  "**Typed results and runtime context** inside application code",
+  "**Customising the harness** and **serving** a deep agent"
+ ],
+ "flow": "weekly ops review (one deep agent)\n  memory  /memories/AGENTS.md (store): managers, email rules        writes wait for a person\n  skill   /skills/weekly-report (repo): the procedure                 read only when needed\n  task    sales-analyst ×6, voice-of-customer ×6 → /review.md\n  send_email → interrupt → a person approves or rejects → OpsReviewResult (typed) for code",
+ "labs": [
+  {
+   "lab": "agents.deep-memory",
+   "icon": "🧠",
+   "covers": [
+    "deep.l12"
+   ],
+   "explain": "House rules in **/memories/AGENTS.md** followed without a read, and a new rule the agent **writes into its own memory**, then follows in the next thread.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m10_deep_control",
+     "symbol": "memory_agent",
+     "why": "Memory.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m10_deep_control",
+     "symbol": "seed",
+     "why": "Seeding it.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.deep-skills",
+   "icon": "📚",
+   "covers": [
+    "deep.l13"
+   ],
+   "explain": "The **weekly-report skill** from data/ops/skills: an unrelated question reads nothing; a review request reads it and follows it.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m10_deep_control",
+     "symbol": "skilled_agent",
+     "why": "Skills from the repo.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.deep-context",
+   "icon": "🗜️",
+   "covers": [
+    "deep.l14"
+   ],
+   "explain": "The quarter's 5,600 orders in one tool result, **evicted to a file** and grepped (the answer matched SQL); a conversation **summarised** at 10 messages with the full history offloaded; the **compaction** tool.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m10_deep_control",
+     "symbol": "eviction",
+     "why": "Eviction.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m10_deep_control",
+     "symbol": "summarization",
+     "why": "Summarisation.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.deep-hitl",
+   "icon": "✋",
+   "covers": [
+    "deep.l15"
+   ],
+   "explain": "Two emails to managers **paused**: one approved, one **edited**; then a run where the email is **rejected**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m10_deep_control",
+     "symbol": "hitl_agent",
+     "why": "interrupt_on.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.deep-typed",
+   "icon": "🧾",
+   "covers": [
+    "deep.l16"
+   ],
+   "explain": "Two managers ask 'how did **my** café do?': the **context** decides the café and the answer is a typed **WeekBrief**. A third asks for another café's numbers: the tool still returned their own, but the model **mislabelled** them, so known fields belong in code.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m10_deep_control",
+     "symbol": "typed_agent",
+     "why": "Typed and in context.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.deep-harness",
+   "icon": "🔧",
+   "covers": [
+    "deep.l17"
+   ],
+   "explain": "A **read-only** deep agent with a **usage meter** (it still claimed to have saved a file), deepagents' filesystem in a plain **create_agent**, and a **harness profile** for every Mistral deep agent.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m10_deep_control",
+     "symbol": "read_only_agent",
+     "why": "Replacing a built-in.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m10_deep_control",
+     "symbol": "harness_profile",
+     "why": "A profile.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.deep-serving",
+   "icon": "🌐",
+   "covers": [
+    "deep.l18"
+   ],
+   "explain": "A deep ops agent served by **`langgraph dev`**: a streamed run, its **files read back from the server**, and a second run that continues with them.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m10_deep_control",
+     "symbol": "use_the_server",
+     "why": "The SDK.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the weekly ops review (capstone)",
+  "summary": "One deep agent runs Nimbus's weekly ops review. It reads the house rules from memory and loads the weekly-report procedure as a skill. It delegates numbers and complaints to two analysts with clean contexts, writes /review.md, and emails the managers of cafés that need attention, each email paused for a person. It returns a typed result for code. The tools refuse impossible dates and say plainly when there are no low reviews; both were measured failures before they were fixed.",
+  "covers": [
+   "deep.l19"
+  ],
+  "steps": [
+   {
+    "id": "memory",
+    "title": "Memory",
+    "icon": "🧠",
+    "tagline": "House rules, guarded",
+    "explain": "data/ops/AGENTS.md is seeded into the store once and loaded into every thread. The agent may propose changes, but writes to /memories/ wait for a person, and the skill folder can't be written at all.",
+    "code": [
+     {
+      "module": "nimbus.ops.review",
+      "symbol": "build_reviewer",
+      "why": "The reviewer.",
+      "notes": [
+       {
+        "match": "FilesystemPermission(operations=[\"write\"], paths=[\"/memories/**\"], mode=\"interrupt\"),  # a person approves",
+        "text": "Memory steers every future run: a person approves changes."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.ops.review",
+      "symbol": "seed_memory",
+      "why": "Seeding the house rules.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Review memory changes like code: the memory lab showed the agent rewriting its own rules on request."
+    ]
+   },
+   {
+    "id": "evidence",
+    "title": "Evidence",
+    "icon": "🔎",
+    "tagline": "No invented reviews",
+    "explain": "An early capstone run listed three \"low reviews\" for cafés that had none, with ids like rev_20260925_001. low_ratings returned an empty list, and an empty list invited invention. It now says \"No reviews rated 2 or lower\", the skill says to list only what voice-of-customer reported, and the scorer flags any review id that isn't in the warehouse.",
+    "code": [
+     {
+      "module": "nimbus.ops.agents",
+      "symbol": "cafe_low_ratings",
+      "why": "An explicit 'none'.",
+      "notes": [
+       {
+        "match": "return reviews or f\"No reviews rated 2 or lower for {cafe} in this period.\"",
+        "text": "Measured: [] came back as invented reviews."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.ops.evaluation",
+      "symbol": "score",
+      "why": "Invented ids flagged.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Make every empty result say so in words."
+    ]
+   },
+   {
+    "id": "approvals",
+    "title": "Approvals",
+    "icon": "✅",
+    "tagline": "A person before every email",
+    "explain": "interrupt_on={'send_email': True}. In development runs the agent proposed emails to all six managers, while the rule allows only the three whose cafés need attention. The person reviewing rejects the others with a reason.",
+    "code": [
+     {
+      "module": "nimbus.ops.evaluation",
+      "symbol": "run_capstone",
+      "why": "The scripted reviewer.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Count the emails a person stops: that's the agent's error rate on actions."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "The capstone, measured",
+    "lab": "agents.ops-capstone-eval",
+    "explain": "Four reviews: two by the capstone reviewer, two by the same agent with the house rules and the procedure pasted into its prompt. Each was checked against the warehouse and the house rules.\n\n| two reviews each | facts right | invented reviews | needs-attention list right | emails a person stopped | rule breaks in sent emails | tokens per review | seconds |\n|---|---|---|---|---|---|---|---|\n| everything in the prompt | 58/58 | 0 | 2/2 | 1 | 0 | **74,876** | **51** |\n| **harness: memory + skill** | 58/58 | 0 | 2/2 | **0** | 0 | 151,244 | 89 |\n\nBoth wrote correct reviews from the same tools, and the approval step stopped the one wrong email (to the manager of a café that didn't need attention). In development runs before these four, the harness version also emailed all six managers once, so treat 1 vs 0 as noise. The harness costs about twice the tokens: memory, skills and the filesystem add their own instructions to every call. It ships anyway. The house rules live in a store a person approves changes to, the procedure is a versioned file reviewed like code, and both can change without redeploying the agent. With everything in the prompt, changing a rule means changing the code.",
+    "code": [
+     {
+      "module": "academy.labs.agents.m10_deep_control",
+      "symbol": "evaluate_capstone",
+      "why": "The evaluation.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Re-run the capstone after any change to memory, a skill, a tool or the model."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/ops/review.py",
+   "role": "The capstone reviewer: memory, skill, subagents, approvals, typed result"
+  },
+  {
+   "path": "data/ops/AGENTS.md",
+   "role": "House rules (seeded into memory)"
+  },
+  {
+   "path": "data/ops/skills/weekly-report/SKILL.md",
+   "role": "The review procedure"
+  },
+  {
+   "path": "src/nimbus/ops/evaluation.py",
+   "role": "Facts, invented ids, attention, recipients, house rules"
+  },
+  {
+   "path": "server/ops_server.py",
+   "role": "A served deep ops agent"
+  },
+  {
+   "path": "src/academy/labs/agents/m10_deep_control.py",
+   "role": "The labs and the capstone"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Serve the agents",
+   "cmd": "cd server && uv run langgraph dev"
+  }
+ ]
+}

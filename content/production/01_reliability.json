@@ -1,0 +1,254 @@
+{
+ "track": "production",
+ "id": "01",
+ "title": "Reliability, rate limits & cost",
+ "summary": "A model call is the slowest, most expensive and least reliable line in your service. This module measures and controls it: **tokens and cost** per request and per run, the provider's rate limit and your own, timeouts, retries, a fallback provider and a circuit breaker, routing easy requests to a cheaper model with per-caller budgets, and keeping abuse out with hashed API keys, plans and request limits.",
+ "learn": [
+  "**Tokens and cost**: usage on every reply, estimating before sending, totals per run, a price table, runs with cost",
+  "**Rate limits**: InMemoryRateLimiter for the provider's, Redis for yours (per plan, per minute)",
+  "**When the provider fails**: timeouts, retries with backoff, a fallback provider, a circuit breaker",
+  "**The right model**: routing simple questions to a smaller model, cost per request, daily token budgets",
+  "**Keeping abuse out**: API keys stored as hashes, plans, 429 with Retry-After, request size limits"
+ ],
+ "flow": "request ─→ API key (hash → plan) ─→ rate limit (Redis) ─→ budget left? ─→ route: small | default\n   ─→ circuit breaker ─→ model (timeout, retries) ──fails──→ backup provider\n   ─→ usage_metadata ─→ tokens × price ─→ cost per request, budget spent",
+ "labs": [
+  {
+   "lab": "prod.tokens-cost",
+   "icon": "💰",
+   "covers": [
+    "lc.l59"
+   ],
+   "explain": "The same customer question three ways: with **every help-centre document in the prompt**, with **only the relevant text and a `max_tokens` cap**, and on a **reasoning model** (Groq) whose hidden thinking you also pay for. Then a three-turn conversation shows input tokens growing as the history is resent.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.llm.usage",
+     "symbol": "Usage",
+     "why": "Nimbus adds up and prices usage here.",
+     "notes": [
+      {
+       "match": "def cost_usd(self, price_in: float = REFERENCE_PRICE_IN, price_out: float = REFERENCE_PRICE_OUT) -> float:",
+       "text": "Tokens × price, input and output priced separately."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.llm.usage",
+     "symbol": "UsageRecorder",
+     "why": "A callback that records every model call of a request.",
+     "notes": [
+      {
+       "match": "def on_llm_end(self, response, *, run_id: UUID, **kwargs) -> None:",
+       "text": "Called after every model call, whichever chain or agent made it."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "prod.rate-limiter",
+   "icon": "⏲️",
+   "covers": [
+    "lc.l58.3"
+   ],
+   "explain": "Five calls with **no limiter** and with **2 requests per second**, and why Nimbus keeps **one limiter per provider**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.llm.models",
+     "symbol": "rate_limiter",
+     "why": "One per provider.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "smith.cost",
+   "icon": "🧾",
+   "covers": [
+    "smith.l07"
+   ],
+   "explain": "Three LangChain calls recorded as **runs with their tokens** (in memory: nothing is sent), a **REST call LangChain can't see** described as an llm run with provider and model metadata, each **priced** from config, and **project totals** like get_run_stats.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.production.m01_reliability",
+     "symbol": "log_an_unseen_call",
+     "why": "Logging what LangChain can't see.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.reliability",
+   "icon": "🧯",
+   "covers": [
+    "prod.l06"
+   ],
+   "explain": "A **1-second timeout** on a long answer, a flaky step **retried with backoff**, Mistral down and **Groq answering**, and a **circuit breaker** that stops calling the broken provider.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.llm.resilience",
+     "symbol": "CircuitBreaker",
+     "why": "The breaker.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.routing-budgets",
+   "icon": "🧭",
+   "covers": [
+    "prod.l08"
+   ],
+   "explain": "Four questions **routed** to the small or the default model, each **priced** from config; then **per-caller daily token budgets** in Redis, refused with 429 before any model call. Needs `docker compose up -d`.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.llm.routing",
+     "symbol": "route",
+     "why": "The rule.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.api.limits",
+     "symbol": "TokenBudget",
+     "why": "Budgets.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "prod.abuse",
+   "icon": "🚧",
+   "covers": [
+    "prod.l09"
+   ],
+   "explain": "No key, a wrong key and a valid one; five more requests on the **free** and the **pro** plan against a **Redis fixed-window limiter**; a 10,000-character message. Needs `docker compose up -d`.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.api.limits",
+     "symbol": "rate_limited",
+     "why": "The limiter.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.api.deps",
+     "symbol": "api_key",
+     "why": "Keys matched by hash.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the right model, priced, and still answering when a provider is down",
+  "summary": "Simple questions go to the small model; each model sits behind a circuit breaker with Groq as backup; every request's tokens are priced from config and counted against the caller's daily budget; API keys are stored as hashes with a plan, and every plan has a per-minute limit in Redis.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "route",
+    "title": "Route",
+    "icon": "🧭",
+    "tagline": "Small model for simple questions",
+    "explain": "route() sends questions with one part to the small model and the rest to the default; RoutedModel puts each behind a CircuitBreaker with the fallback provider.",
+    "code": [
+     {
+      "module": "nimbus.llm.routing",
+      "symbol": "RoutedModel",
+      "why": "Routing + breakers.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Tune the rule on your own traffic: misrouted hard questions cost answers, not just money."
+    ]
+   },
+   {
+    "id": "resilience",
+    "title": "Resilience",
+    "icon": "🧯",
+    "tagline": "Timeouts, retries, fallback, breaker",
+    "explain": "Timeouts and retries on every client (get_chat_model); with_fallback for a second provider; CircuitBreaker opens after circuit_threshold failures and skips the primary for circuit_cooldown_s.",
+    "code": [
+     {
+      "module": "nimbus.llm.resilience",
+      "symbol": "CircuitBreaker",
+      "why": "The breaker.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Alert when the breaker opens: answers are coming from the backup, at its price."
+    ]
+   },
+   {
+    "id": "limits",
+    "title": "Limits",
+    "icon": "🚧",
+    "tagline": "Keys, plans, budgets",
+    "explain": "api_key matches sha256 hashes; rate_limited counts per caller per minute in Redis (429 + Retry-After); TokenBudget refuses a caller over today's tokens before any model call.",
+    "code": [
+     {
+      "module": "nimbus.api.limits",
+      "symbol": "rate_limited",
+      "why": "Rate limits.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.api.limits",
+      "symbol": "TokenBudget",
+      "why": "Budgets.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Without Redis the limits fail open, logged: decide per endpoint whether that's right."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "An outage drill, and cost",
+    "lab": "prod.resilience-eval",
+    "explain": "Ten support questions, five simple and five with several parts, through the default model alone and the routed setup, with Mistral up and down.\n\n| | answered | right facts | latency p50 | US$ per 1,000 requests |\n|---|---|---|---|---|\n| default model only | 10/10 | 10/10 | 1.5 s | 0.026 |\n| **routed, with fallback and breaker** | **10/10** | **10/10** | **2.6 s** | **0.020** |\n| default model only · Mistral down | 0/10 | 0/10 | 2.6 s | — |\n| **routed, with fallback and breaker · Mistral down** | **10/10** | **10/10** | **2.2 s** | **0.070** |\n\nWith Mistral down (an invalid key stands in for an outage), the default model alone answered nothing; the routed setup answered everything from Groq, and the breaker skipped the dead provider after two failures in a row instead of waiting on it for every request. With Mistral up, sending the five simple questions to the small model cut the cost per request by 22% with the same right facts. The backup costs more per request (reasoning tokens), so it's for outages, not every day. Prices are the example table in settings.model_prices.",
+    "code": [
+     {
+      "module": "academy.labs.production.m01_reliability",
+      "symbol": "drill",
+      "why": "The drill.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Run the outage drill before every provider or model change."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/llm/usage.py",
+   "role": "Usage and cost"
+  },
+  {
+   "path": "src/nimbus/llm/resilience.py",
+   "role": "Fallbacks and the circuit breaker"
+  },
+  {
+   "path": "src/nimbus/llm/routing.py",
+   "role": "Routing, prices, RoutedModel"
+  },
+  {
+   "path": "src/nimbus/api/limits.py",
+   "role": "Plans, rate limits, budgets"
+  },
+  {
+   "path": "src/academy/labs/production/m01_reliability.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Start Redis (limits, budgets)",
+   "cmd": "docker compose up -d"
+  }
+ ]
+}

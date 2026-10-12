@@ -1,0 +1,220 @@
+[
+ {
+  "id": "r01",
+  "request": "Where is my order NC-78123?",
+  "expect": [
+   {
+    "name": "get_order",
+    "args": {
+     "order_id": "NC-78123"
+    }
+   }
+  ],
+  "answer_all": [
+   "shipped"
+  ]
+ },
+ {
+  "id": "r02",
+  "request": "Can I return my unopened Nilgiri Sunrise from order NC-4410?",
+  "expect": [
+   {
+    "name": "check_refund",
+    "args": {
+     "order_id": "NC-4410",
+     "opened": false
+    }
+   }
+  ],
+  "answer_any": [
+   "eligible",
+   "can return",
+   "can be returned",
+   "can be refunded",
+   "will be refunded",
+   "refund will be"
+  ]
+ },
+ {
+  "id": "r03",
+  "request": "I opened the bag from NC-20417 and I don't like the taste. I want a refund.",
+  "expect": [
+   {
+    "name": "check_refund",
+    "args": {
+     "order_id": "NC-20417",
+     "opened": true
+    }
+   }
+  ],
+  "answer_all": [
+   "open"
+  ]
+ },
+ {
+  "id": "r04",
+  "request": "Please refund order NC-12093, the bag is still sealed.",
+  "expect": [
+   {
+    "name": "check_refund",
+    "args": {
+     "order_id": "NC-12093",
+     "opened": false
+    }
+   }
+  ],
+  "answer_all": [
+   "14"
+  ]
+ },
+ {
+  "id": "r05",
+  "request": "How much is an oat latte, and is it vegan?",
+  "expect": [
+   {
+    "name": "cafe_menu_item",
+    "args": {
+     "name": "oat latte"
+    }
+   }
+  ],
+  "answer_all": [
+   "220",
+   "vegan"
+  ]
+ },
+ {
+  "id": "r06",
+  "request": "How many Nimbus Beans points do I get for a ₹1300 order?",
+  "expect": [
+   {
+    "name": "loyalty_points",
+    "args": {
+     "amount_rupees": 1300
+    }
+   }
+  ],
+  "answer_numbers": [
+   130
+  ]
+ },
+ {
+  "id": "r07",
+  "request": "What's the status of order NC-99999?",
+  "expect": [
+   {
+    "name": "get_order",
+    "args": {
+     "order_id": "NC-99999"
+    }
+   }
+  ],
+  "answer_any": [
+   "couldn't find",
+   "could not find",
+   "no order",
+   "not find",
+   "check",
+   "doesn't exist",
+   "does not exist",
+   "unable to find",
+   "can't find",
+   "cannot find"
+  ]
+ },
+ {
+  "id": "r08",
+  "request": "Did I order twice by mistake? Check NC-55021 and NC-55022.",
+  "expect": [
+   {
+    "name": "get_order",
+    "args": {
+     "order_id": "NC-55021"
+    }
+   },
+   {
+    "name": "get_order",
+    "args": {
+     "order_id": "NC-55022"
+    }
+   }
+  ],
+  "answer_all": [
+   "chikmagalur"
+  ]
+ },
+ {
+  "id": "r09",
+  "request": "There was a piece of glass in my cold brew!",
+  "expect": [
+   {
+    "name": "escalate_to_human",
+    "args": {
+     "urgency": "urgent"
+    }
+   }
+  ],
+  "answer_all": [
+   "1 hour"
+  ]
+ },
+ {
+  "id": "r10",
+  "request": "What's the status of my order NC-12500, and how many loyalty points will it earn me?",
+  "expect": [
+   {
+    "name": "get_order",
+    "args": {
+     "order_id": "NC-12500"
+    }
+   },
+   {
+    "name": "loyalty_points",
+    "args_any": [
+     {
+      "order_id": "NC-12500"
+     },
+     {
+      "amount_rupees": 2090
+     }
+    ]
+   }
+  ],
+  "answer_all": [
+   "packed"
+  ],
+  "answer_numbers": [
+   209
+  ]
+ },
+ {
+  "id": "r11",
+  "request": "Is the cappuccino vegan?",
+  "expect": [
+   {
+    "name": "cafe_menu_item",
+    "args": {
+     "name": "cappuccino"
+    }
+   }
+  ],
+  "answer_any": [
+   "not vegan",
+   "isn't vegan",
+   "is not vegan",
+   "non-vegan",
+   "not suitable"
+  ]
+ },
+ {
+  "id": "r12",
+  "request": "Hi! Do you sell coffee grinders?",
+  "expect": [],
+  "also_ok": [
+   "escalate_to_human"
+  ],
+  "answer_any": [
+   "grinder"
+  ]
+ }
+]

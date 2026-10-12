@@ -1,0 +1,331 @@
+{
+ "track": "agents",
+ "id": "05",
+ "title": "Persistence & memory",
+ "summary": "A graph without a checkpointer forgets everything between calls. This module saves every step under a thread id and covers what's saved and how to read it. It moves from memory to SQLite to Postgres, travels back to replay and fork earlier checkpoints, and keeps long conversations within the model's budget (trim, delete, summarise). Facts the customer states are kept across conversations in a store. Runs survive a crash mid-way, and checkpoints are managed in production: inspect, forget, expire, encrypt, migrate. The support desk gets conversations that continue and customer memories in Postgres, with \"forget me\" and retention built in.",
+ "learn": [
+  "**Checkpointers and threads**: state saved after every step; get_state and get_state_history",
+  "**Durable savers**: SQLite read by a new process, Postgres for production, async savers",
+  "**Time travel**: replay, fork with update_state, as_node; history is never overwritten",
+  "**Chat memory in a graph**: trim what the model sees, delete with RemoveMessage, summarise",
+  "**Long-term memory**: a store with semantic search, runtime.store, and being strict about what counts",
+  "**Durability**: resume after a failure without redoing work, pending writes, durability modes",
+  "**Checkpoints in production**: list, forget a customer, retention, encryption at rest, schema changes"
+ ],
+ "flow": "thread \"c-1042:a\" ─ turn 1 ─┐   PostgresSaver: every step of every conversation\n                  turn 2 ─┤→ load_customer (recall memories by meaning) → agent ⇄ tools (remember) → file_ticket\nthread \"c-1042:b\" ─ turn 1 ─┘   PostgresStore: (\"customers\", \"c-1042\", \"memories\") → \"Is lactose intolerant.\"",
+ "labs": [
+  {
+   "lab": "agents.checkpointers",
+   "icon": "💾",
+   "covers": [
+    "lc.l25",
+    "lg.l27"
+   ],
+   "explain": "A follow-up (\"how many points did **it** earn?\") for a customer with two orders: without a checkpointer the desk listed both orders' points; in the **same thread** it answered for the right one. Then **get_state** and **get_state_history** (16 checkpoints for two turns).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m05_memory",
+     "symbol": "with_a_checkpointer",
+     "why": "A checkpointer and threads.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.durable-checkpointers",
+   "icon": "🗄️",
+   "covers": [
+    "lg.l28"
+   ],
+   "explain": "A visit counter: **InMemorySaver** forgets on restart, **SqliteSaver** is read by a brand-new process, the tables inside, **PostgresSaver** on the course database, **AsyncSqliteSaver** with ainvoke.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m05_memory",
+     "symbol": "sqlite_survives_a_restart",
+     "why": "A new process continues.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m05_memory",
+     "symbol": "postgres_saver",
+     "why": "Postgres.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.time-travel",
+   "icon": "⏪",
+   "covers": [
+    "lc.l51",
+    "lg.l29"
+   ],
+   "explain": "A drink suggestion and its price: checkpoint ids, a **replay**, a **fork** with another mood, a value written **as_node**, and the history that keeps all of it.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m05_memory",
+     "symbol": "fork",
+     "why": "Fork.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m05_memory",
+     "symbol": "as_node",
+     "why": "as_node.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.chat-memory",
+   "icon": "✂️",
+   "covers": [
+    "lg.l30"
+   ],
+   "explain": "A 22-message conversation whose first message holds the fact the last question needs: **all of it**, **trimmed**, after **RemoveMessage**, or a **summary** plus the recent messages. Only the full history and the summary kept the fact.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m05_memory",
+     "symbol": "trimmed",
+     "why": "Trim.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m05_memory",
+     "symbol": "summarised",
+     "why": "Summarise.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.memory-store",
+   "icon": "🧠",
+   "covers": [
+    "lc.l30",
+    "lg.l31"
+   ],
+   "explain": "A store's **put / get / semantic search**, then six messages through a **loose extractor** (33 'memories', 19 from messages with nothing lasting) and the desk's strict **remember tool** (3, one of them a one-off delivery request). A memory saved in one conversation shapes the reply in another.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.memory",
+     "symbol": "remember_fact",
+     "why": "The remember tool.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m05_memory",
+     "symbol": "loose_extractor",
+     "why": "The loose extractor.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.durability",
+   "icon": "🛟",
+   "covers": [
+    "lg.l32"
+   ],
+   "explain": "An order flow whose payment step fails once: the last completed step survives, **resume** doesn't redo finished work, a failed **parallel** branch is the only one re-run, and the cost of **sync / async / exit** durability on 30 steps.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m05_memory",
+     "symbol": "fail_then_resume",
+     "why": "Fail and resume.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.checkpoint-admin",
+   "icon": "🔐",
+   "covers": [
+    "lg.l33"
+   ],
+   "explain": "The desk's conversations in the course Postgres: **list** checkpoints, every thread with when it was last active, a **forget-me** request (conversations and memories), **retention**, **encryption at rest**, and a field added to the state later.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.support.memory",
+     "symbol": "forget_customer",
+     "why": "Forget a customer.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m05_memory",
+     "symbol": "encryption_at_rest",
+     "why": "Encrypted checkpoints.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the support desk remembers",
+  "summary": "The desk runs on PostgresSaver (conversations, by thread id \"<customer>:<conversation>\") and PostgresStore (customer memories, recalled by meaning before the agent runs). The agent saves lasting facts with a strict remember tool. The model sees the last 3,000 tokens of a conversation; the checkpoint keeps all of it. Every turn resets its own answer fields, and \"forget me\", retention and encryption at rest are built in.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "persist",
+    "title": "Persist",
+    "icon": "💾",
+    "tagline": "Postgres for both",
+    "explain": "`desk_persistence` opens a PostgresSaver and a PostgresStore (pgvector index on the memories) on the course database, creates their tables, and closes both on exit. Thread ids start with the customer id.",
+    "code": [
+     {
+      "module": "nimbus.support.memory",
+      "symbol": "desk_persistence",
+      "why": "Checkpointer and store.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.support.memory",
+      "symbol": "thread_id",
+      "why": "Thread ids per customer.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "One database for conversations and memories keeps backups and deletion in one place."
+    ]
+   },
+   {
+    "id": "turns",
+    "title": "Turns",
+    "icon": "🔁",
+    "tagline": "Each turn starts clean",
+    "explain": "With a checkpointer, every field of the state outlives the turn. While this module was built, the desk answered a follow-up with the previous turn's reply, because `outcome` was still set. `load_customer` now resets the per-turn fields, and `file_ticket` appends the reply as an AI message, so the conversation never ends on a tool result.",
+    "code": [
+     {
+      "module": "nimbus.support.desk",
+      "symbol": "build_support_desk",
+      "why": "Per-turn fields reset.",
+      "notes": [
+       {
+        "match": "\"outcome\": None,  # this turn's answer: a checkpointed conversation still holds the previous turn's",
+        "text": "Found by the first two-turn test."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Decide for every state field whether it belongs to the conversation or to one turn."
+    ]
+   },
+   {
+    "id": "remember",
+    "title": "Remember",
+    "icon": "🧠",
+    "tagline": "Strict memories, recalled by meaning",
+    "explain": "The remember tool takes a kind (diet, taste, delivery, contact) and one short sentence. It refuses order details and skips near-duplicates. `load_customer` recalls the three memories closest to the message. The prompt marks them as preferences, not account facts: worded \"you know: …\", a remembered \"only drinks decaf\" turned into a \"Chikmagalur Classic decaf\" subscription.",
+    "code": [
+     {
+      "module": "nimbus.support.memory",
+      "symbol": "remember_fact",
+      "why": "The tool.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.support.desk",
+      "symbol": "system_prompt",
+      "why": "Memories as preferences.",
+      "notes": [
+       {
+        "match": "\"not facts about their account: orders and subscriptions come only from the tools.\"",
+        "text": "Preferences can't rewrite account facts."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Give the agent a tool for every kind of thing customers say: without remember, a stated preference got the nearest tool, a subscription pause nobody asked for."
+    ]
+   },
+   {
+    "id": "privacy",
+    "title": "Privacy",
+    "icon": "🔐",
+    "tagline": "Forget, expire, encrypt",
+    "explain": "`nimbus support forget --customer …` deletes every conversation and memory of a customer; `expire_conversations` is the nightly retention job; NIMBUS_CHECKPOINT_KEY encrypts checkpoints at rest.",
+    "code": [
+     {
+      "module": "nimbus.support.memory",
+      "symbol": "forget_customer",
+      "why": "Forget me.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.support.memory",
+      "symbol": "expire_conversations",
+      "why": "Retention.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Memories outlive conversations by design: say so in the privacy policy, and delete both on request."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "12 conversations, three ways",
+    "lab": "agents.desk-memory-eval",
+    "explain": "Follow-ups in the same conversation (5), facts recalled in a new one (4), and messages with nothing worth remembering (3), through the desk with no memory, with a checkpointer, and with a checkpointer and the store.\n\n| | follow-ups right | recalled in a new conversation | memories saved from noise | actions nobody asked for | model calls | tokens |\n|---|---|---|---|---|---|---|\n| no memory | 3/5 | 2/4 | 0 | 1 | 5.50 | 6,533 |\n| checkpointer | **5/5** | 2/4 | 0 | 1 | 4.42 | 5,331 |\n| **checkpointer + store** | **5/5** | **4/4** | 0 | **0** | **3.75** | **5,143** |\n\nThe two recalls without a store were luck (a vegan or lactose-free question answered from the menu anyway). The same results came out in three runs.\n\nThe follow-ups need the conversation; recall needs the store. Without a remember tool, \"I only drink decaf these days\" was answered by pausing the subscription: the agent reached for the nearest tool. Module 6 puts a person in front of actions like that.",
+    "code": [
+     {
+      "module": "academy.labs.agents.m05_memory",
+      "symbol": "evaluate_memory",
+      "why": "The evaluation.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.support.memory_eval",
+      "symbol": "score",
+      "why": "How a conversation is scored.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Count unrequested actions in every agent evaluation, not only the requested ones."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/support/memory.py",
+   "role": "Postgres persistence, the remember tool, recall, forget, retention"
+  },
+  {
+   "path": "src/nimbus/support/desk.py",
+   "role": "The desk: per-turn fields, memories in the prompt, trimmed history"
+  },
+  {
+   "path": "src/nimbus/support/memory_eval.py",
+   "role": "Conversation scoring, unrequested actions"
+  },
+  {
+   "path": "data/eval/memory_conversations.json",
+   "role": "12 conversations"
+  },
+  {
+   "path": "src/academy/labs/agents/m05_memory.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "A conversation",
+   "cmd": "uv run nimbus support desk --customer c-1042 --conversation a \"Please remember I'm lactose intolerant.\""
+  },
+  {
+   "label": "A new one recalls it",
+   "cmd": "uv run nimbus support desk --customer c-1042 --conversation b \"Which café drinks would suit me?\""
+  },
+  {
+   "label": "Forget the customer",
+   "cmd": "uv run nimbus support forget --customer c-1042"
+  }
+ ]
+}

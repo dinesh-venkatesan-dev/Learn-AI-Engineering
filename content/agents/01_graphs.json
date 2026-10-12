@@ -1,0 +1,239 @@
+{
+ "track": "agents",
+ "id": "01",
+ "title": "Graphs: state, nodes, edges & reducers",
+ "summary": "An agent is a loop: think, act, look at the result, decide again. A straight chain can't loop, so agents run on **graphs**: a shared **state**, **nodes** that read it and return partial updates, **edges** that decide what runs next, and **reducers** that say how updates merge. This module builds that foundation and turns the Nimbus support pipeline into a graph whose order lookup runs beside triage.",
+ "learn": [
+  "**Why LangGraph**: a chain runs once; a graph can check its output and loop back",
+  "**State schemas**: TypedDict, Pydantic, dataclass and MessagesState, and partial updates",
+  "**Nodes**: functions, config and runtime context, Runnables as nodes, async nodes, names",
+  "**Edges**: sequences, fan-out in parallel, and wiring checked by compile()",
+  "**Reducers**: replace, operator.add, add_messages, custom reducers and Overwrite",
+  "**Running graphs**: invoke, stream modes, batch, diagrams"
+ ],
+ "flow": "START ─┬─ triage ─────────┬─ draft_reply → END\n       └─ look_up_order ──┘\nstate = {ticket, triage, order, order_note, reply, steps (operator.add)}   each node returns only the keys it changes",
+ "labs": [
+  {
+   "lab": "agents.why-langgraph",
+   "icon": "🔁",
+   "covers": [
+    "lg.l01"
+   ],
+   "explain": "Five taglines with a 3-word limit. A **chain** gets one pass and can't notice when the tagline is too long; a **graph** writes, checks and loops back with feedback, at most three times.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m01_graphs",
+     "symbol": "a_graph_that_loops",
+     "why": "The loop.",
+     "notes": [
+      {
+       "match": "builder.add_conditional_edges(\"check\", route, {\"retry\": \"write\", \"done\": END, \"give_up\": END})",
+       "text": "An edge back to an earlier node: the loop."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "agents.state-schemas",
+   "icon": "📋",
+   "covers": [
+    "lg.l02"
+   ],
+   "explain": "The same one-node order graph with each kind of **state schema**: TypedDict (documents, checks nothing), Pydantic (validates and coerces, with defaults), a dataclass (defaults, no validation), and MessagesState for chat.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m01_graphs",
+     "symbol": "pydantic_state",
+     "why": "Validation and defaults.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.nodes",
+   "icon": "🔧",
+   "covers": [
+    "lg.l03"
+   ],
+   "explain": "Every way to write a **node**: a plain function (or one that returns nothing), one that reads `config` and the runtime **context**, any **Runnable**, and an **async** node, plus how nodes are named.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m01_graphs",
+     "symbol": "config_and_runtime",
+     "why": "Config and context by parameter name.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.edges",
+   "icon": "➡️",
+   "covers": [
+    "lg.l04"
+   ],
+   "explain": "Two slow nodes **in a line** and **fanned out** (timed), and the wiring mistakes **compile()** catches.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m01_graphs",
+     "symbol": "sequence_vs_fan_out",
+     "why": "Sequence vs fan-out.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.graph-basics",
+   "icon": "🕸️",
+   "covers": [
+    "lc.l48",
+    "lg.l05"
+   ],
+   "explain": "A Nimbus order runs through four nodes; two of them run **in the same step** and both write `notes`. The identical graph with four state schemas: no reducers, `operator.add` on notes only, on both lists, and a custom `edit_order` reducer that understands removals. One crashes, two silently produce the wrong order, one is right.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m01_graphs",
+     "symbol": "state_with_custom_reducer",
+     "why": "A reducer is a function (current, update) → new value.",
+     "notes": [
+      {
+       "match": "def edit_order(current: list[str], update: list[str]) -> list[str]:",
+       "text": "Your merge rule, applied to every update of `items`."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "agents.running",
+   "icon": "▶️",
+   "covers": [
+    "lg.l06"
+   ],
+   "explain": "One order graph run every way: **invoke**, **stream** with `values`, `updates` and `tasks`, **batch**, and drawn as ASCII and Mermaid.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m01_graphs",
+     "symbol": "run_every_way",
+     "why": "All the ways to run.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus support graph v1",
+  "summary": "The support pipeline from the LangChain track (triage → reply) becomes an explicit graph. The order lookup needs only the ticket text, so it starts at the same time as triage; the reply waits for both and now knows the order's real status. Every node returns a partial update and adds a line to `steps`, so each run can be streamed and checked node by node.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "state",
+    "title": "State",
+    "icon": "📋",
+    "tagline": "What the nodes share",
+    "explain": "`SupportState`: the ticket, the triage decision, the order record and a note about it, the reply, and `steps` (a list with `operator.add`: every node appends what it did).",
+    "code": [
+     {
+      "module": "nimbus.support.graph",
+      "symbol": "SupportState",
+      "why": "The state.",
+      "notes": [
+       {
+        "match": "steps: Annotated[list[str], operator.add]",
+        "text": "Each node adds a line; nothing is overwritten."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Keep state small and serialisable: from Module 5 it is checkpointed after every step."
+    ]
+   },
+   {
+    "id": "nodes",
+    "title": "Nodes",
+    "icon": "🔧",
+    "tagline": "Triage, look up, draft",
+    "explain": "`triage` reuses the pipeline's triage step (structured output with a retry); `look_up_order` finds an order id in the ticket and reads the order (no model); `draft_reply` sends safety tickets the approved fixed message and otherwise drafts a reply with the order facts attached.",
+    "code": [
+     {
+      "module": "nimbus.support.graph",
+      "symbol": "build_support_graph",
+      "why": "The graph.",
+      "notes": [
+       {
+        "match": "def look_up_order(state: SupportState) -> dict:",
+        "text": "No model call: plain code, instant."
+       },
+       {
+        "match": "ticket = state[\"ticket\"] + (f\"\\n\\n[Facts for the reply: {state['order_note']}]\" if state.get(\"order_note\") else \"\")",
+        "text": "The reply sees the real order."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Nodes that call models stay thin wrappers around chains that are tested on their own (the LangChain track's triage scorecard still applies)."
+    ]
+   },
+   {
+    "id": "edges",
+    "title": "Edges",
+    "icon": "➡️",
+    "tagline": "Triage and lookup in parallel",
+    "explain": "Two edges from START run `triage` and `look_up_order` in the same step; `add_edge([\"triage\", \"look_up_order\"], \"draft_reply\")` makes the reply wait for both.",
+    "code": [
+     {
+      "module": "nimbus.support.graph",
+      "symbol": "build_support_graph",
+      "why": "Wiring.",
+      "notes": [
+       {
+        "match": "graph.add_edge([\"triage\", \"look_up_order\"], \"draft_reply\")",
+        "text": "The join: waits for every incoming edge."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Draw the graph in the docs (Mermaid) so reviewers can see the flow without reading code."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "Graph vs pipeline, 20 tickets",
+    "lab": "agents.support-graph-eval",
+    "explain": "Same model and prompts on the 20 labelled tickets.\n\n| | category right | reply states the real order status | calls / ticket | p50 |\n|---|---|---|---|---|\n| LCEL pipeline | 0.90 | 0/6 | 1.85 | 4.4 s |\n| **support graph** | 0.95 | **3/6** | 1.85 | 5.2 s |\n\nThe category difference is run-to-run variation (same triage prompt). The graph's replies can state the real order status because the lookup ran beside triage; half of them did. Having the facts isn't using them: Module 2 adds a check that sends such drafts back.",
+    "code": [
+     {
+      "module": "academy.labs.agents.m01_graphs",
+      "symbol": "evaluate_support_graph",
+      "why": "The evaluation.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Measure the node you changed, not just the end result: here triage didn't change, the reply did."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/support/graph.py",
+   "role": "The support graph: state, nodes, edges"
+  },
+  {
+   "path": "src/academy/labs/agents/m01_graphs.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Start the academy",
+   "cmd": "uv run academy"
+  }
+ ]
+}

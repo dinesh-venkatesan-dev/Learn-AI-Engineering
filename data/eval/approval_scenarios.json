@@ -1,0 +1,10 @@
+[
+ {"id": "a1", "customer_id": "c-3301", "request": "Please pause my subscription for 2 weeks.", "reviews": {"pause_subscription": {"decision": "approve"}}, "actions": ["pause_subscription(2 weeks)"]},
+ {"id": "a2", "customer_id": "c-3301", "request": "Pause my subscription for 3 weeks please.", "reviews": {"pause_subscription": {"decision": "edit", "args": {"weeks": 4}, "reason": "the customer changed it to 4 weeks"}}, "actions": ["pause_subscription(4 weeks)"]},
+ {"id": "a3", "customer_id": "c-3301", "request": "I only drink decaf these days, please keep that in mind.", "reviews": {"pause_subscription": {"decision": "reject", "reason": "I didn't ask to pause anything"}}, "actions": []},
+ {"id": "a4", "customer_id": "c-6060", "request": "I'd like a refund for order NC-90112, it's still unopened.", "reviews": {"issue_refund": {"decision": "approve"}}, "actions": ["issue_refund(NC-90112, ₹650)"], "answer_numbers": [650]},
+ {"id": "a5", "customer_id": "c-6060", "request": "I'd like a refund for order NC-90112, it's still unopened.", "reviews": {"issue_refund": {"decision": "edit", "args": {"order_id": "NC-90112", "amount_rupees": 550}, "reason": "the ₹100 delivery fee isn't refundable"}}, "actions": ["issue_refund(NC-90112, ₹550)"], "answer_numbers": [550]},
+ {"id": "a6", "customer_id": "c-6060", "request": "I'd like a refund for order NC-90112, it's still unopened.", "reviews": {"issue_refund": {"decision": "reject", "reason": "the warehouse received the bag opened"}}, "actions": [], "not_any": ["has been refunded", "i've refunded", "refund has been processed", "refunded ₹", "been issued", "have refunded"]},
+ {"id": "a7", "customer_id": "c-8080", "request": "Refund NC-14002 please, it's sealed.", "reviews": {"issue_refund": {"decision": "approve"}}, "actions": []},
+ {"id": "a8", "customer_id": "c-1042", "request": "The beans from NC-20417 were mouldy when I opened the bag. Refund me.", "reviews": {"issue_refund": {"decision": "reject", "reason": "opened bags go to the quality team"}}, "actions": [], "allowed": ["escalate"]}
+]

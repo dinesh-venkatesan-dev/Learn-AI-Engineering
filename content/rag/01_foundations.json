@@ -1,0 +1,574 @@
+{
+ "track": "rag",
+ "id": "01",
+ "title": "Foundations: RAG end to end",
+ "summary": "Why retrieval-augmented generation exists, the two basic ways to search text, the retrieval metrics every decision is made with, and **v1 of the Nimbus ingestion pipeline** with its first measured scorecard. Every later module improves one stage of this pipeline and proves the improvement on the same scorecard.",
+ "learn": [
+  "Why a model can't answer from your private data, and what **context stuffing** costs compared with retrieval",
+  "**Keyword search**: word overlap and BM25, where they shine and where they fail",
+  "**Semantic search**: embeddings, cosine similarity, dot product and euclidean distance",
+  "How keyword and semantic search **compare on 45 real questions**, by question type",
+  "The **ingestion pipeline**: load → clean → chunk → embed → store, as production code",
+  "**Retrieval metrics**: hit@k, precision@k, recall@k, nDCG, MAP, F1 and MRR, worked out by hand, and how to choose k",
+  "**Evaluation** of the pipeline: the full scorecard, coverage, answerability, latency, and slices by question type"
+ ],
+ "flow": "INDEXING (when documents change):  files → load → clean → chunk → embed → store\nQUERYING (every question):        question → embed → search → top-k chunks → prompt → model → answer",
+ "labs": [
+  {
+   "lab": "rag.why-rag",
+   "icon": "🤔",
+   "covers": [
+    "rag.l01"
+   ],
+   "explain": "An LLM only knows what it was trained on. Ask it about Nimbus's leave policy and it can only guess. Three fixes:\n\n1. **No context:** the model answers from its own knowledge, and can't know private facts.\n2. **Context stuffing:** paste every document into the prompt. It works, but every question pays for every token, it stops working once the documents outgrow the context window, and accuracy drops as contexts grow (models attend less to the middle of long inputs).\n3. **RAG (retrieval-augmented generation):** retrieve only the relevant chunks, then generate from them.\n\nRun it to compare correctness, tokens, latency and cost. This lab makes **3 model calls**.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m01_foundations",
+     "symbol": "why_rag",
+     "why": "The three approaches, side by side.",
+     "notes": [
+      {
+       "match": "everything =",
+       "text": "Context stuffing: every document, every time."
+      },
+      {
+       "match": "top = _semantic_rank",
+       "text": "RAG: only the 3 most relevant chunks."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.keyword-search",
+   "icon": "🔤",
+   "covers": [
+    "rag.l02"
+   ],
+   "explain": "The simplest retrieval scores each chunk by the query words it contains. **BM25**, the formula behind Elasticsearch, OpenSearch and Lucene, improves on that: rare words count more than common ones, and repeating a word gives diminishing returns.\n\nKeyword search **shines** on exact terms: names, product codes, order ids, email addresses. It **fails** when the question uses different words from the text (*holiday* vs *annual leave*).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m01_foundations",
+     "symbol": "keyword_search",
+     "why": "Overlap and BM25 on the same chunks.",
+     "notes": [
+      {
+       "match": "BM25Okapi(tokens)",
+       "text": "rank_bm25: the classic Okapi BM25 scoring."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.rag.corpus",
+     "symbol": "tokenize",
+     "why": "How text becomes searchable words.",
+     "notes": [
+      {
+       "match": "STOPWORDS",
+       "text": "Stop words ('the', 'how') carry no meaning for search."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.semantic-search",
+   "icon": "🧭",
+   "covers": [
+    "rag.l03"
+   ],
+   "explain": "An **embedding model** turns text into a vector, so search can work by meaning: *Can I work from home?* finds the *Remote work* section without sharing the word *home*.\n\nThree ways to compare vectors: **cosine similarity** (the angle), **dot product** (angle × lengths) and **euclidean distance** (straight-line distance). The lab shows when they agree, and why.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m01_foundations",
+     "symbol": "semantic_search",
+     "why": "Rank chunks by similarity to the query vector.",
+     "notes": [
+      {
+       "match": "cosine = vectors @ q",
+       "text": "Cosine: dot product divided by both lengths."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.retrieval-metrics",
+   "icon": "📐",
+   "covers": [
+    "new.l02"
+   ],
+   "explain": "Every retrieval decision in this course is made with numbers, so first learn what each number means. Pick a question: the lab ranks the chunks, marks each one ✓ or ✗ against the question's evidence, counts how many relevant chunks exist in the **whole index**, and works out every metric by hand.\n\n- **hit@k**: did at least one relevant chunk reach the top k? If not, the model can't answer.\n- **precision@k**: how much of what we send the model is useful. The rest costs tokens and can mislead (the stale 2024 handbook says 20 days of leave).\n- **recall@k**: how many of *all* the relevant chunks we found. Matters when an answer is split across chunks.\n- **nDCG@k**: is the *order* right? Relevant chunks count more near the top. The standard metric for rerankers.\n- **MAP@k** and **F1@k**: precision averaged over relevant ranks, and precision and recall combined.\n- **MRR**: how high the first relevant chunk is.\n\nThen the same metrics over all 45 questions at k = 1 … 10: hit rate and recall rise, precision falls, tokens grow. That curve is how you choose k.",
+   "code": [
+    {
+     "module": "nimbus.rag.evaluation",
+     "symbol": "precision_at",
+     "why": "Share of the k slots that hold a relevant chunk.",
+     "notes": [
+      {
+       "match": "/ k",
+       "text": "Divide by k, not by how many came back: an empty or useless slot is a wasted slot."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.evaluation",
+     "symbol": "recall_at",
+     "why": "Share of every relevant chunk in the index that was returned.",
+     "notes": [
+      {
+       "match": "if total else 0.0",
+       "text": "No chunk holds the whole answer: recall is 0, the question isn't answerable from this index."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.evaluation",
+     "symbol": "ndcg_at",
+     "why": "Position-weighted gain, divided by the gain of the perfect ranking.",
+     "notes": [
+      {
+       "match": "ideal =",
+       "text": "The ideal ranking puts all relevant chunks first: a score of 1 means nothing better was possible."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.evaluation",
+     "symbol": "average_precision_at",
+     "why": "Precision at each relevant rank, averaged (MAP is its mean over questions).",
+     "notes": [
+      {
+       "match": "found / i",
+       "text": "Precision measured at the rank where each relevant chunk appears."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.evaluation",
+     "symbol": "evaluate",
+     "why": "Counts the relevant chunks in the whole index for each question.",
+     "notes": [
+      {
+       "match": "sum(1 for t in texts",
+       "text": "The denominator of recall and nDCG: every indexed chunk that contains all the evidence."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.rag.m01_foundations",
+     "symbol": "_k_tradeoff",
+     "why": "Search once at k = 10, then cut at each k.",
+     "notes": [
+      {
+       "match": "question_metrics(r, c)",
+       "text": "The same per-question metrics, at every cutoff, averaged over the 45 questions."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.keyword-vs-semantic",
+   "icon": "⚖️",
+   "covers": [
+    "rag.l02.3",
+    "rag.l02.4",
+    "rag.l03.4"
+   ],
+   "explain": "Opinions about search methods are cheap; measurements aren't. This lab runs **all 45 evaluation questions** through BM25 and through semantic search, then compares hit@k, precision@k, recall@k, nDCG@k, MRR and latency, overall and per question type, and lists the questions only one of them answers.\n\nThis is how every decision in this course is made.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m01_foundations",
+     "symbol": "keyword_vs_semantic",
+     "why": "Two retrievers, one evaluation set.",
+     "notes": [
+      {
+       "match": "reports = {",
+       "text": "The same evaluate() the production scorecard uses."
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus ingestion v1",
+  "summary": "The real ingestion pipeline of the Nimbus service, in `src/nimbus/rag/ingestion/`. Run it, inspect what each step produced, read its code, then **evaluate** it: the scorecard this module ends with is the baseline every later module must beat.\n\nThe numbers on this page were measured with v1 (chunk 500/80, five file types). Later modules upgrade the same pipeline: loaders v2 and v3 (Modules 2 and 3) and chunking v2 (Module 4), so **▶ Run ingestion** now runs today's production pipeline and its numbers are better than the ones below.",
+  "covers": [
+   "rag.l04"
+  ],
+  "steps": [
+   {
+    "id": "load",
+    "title": "Load",
+    "icon": "📄",
+    "tagline": "Files become LangChain Documents: text + metadata",
+    "explain": "A **Document** has two parts: `page_content` (the text) and `metadata` (a dict about it). The metadata we set here, `source`, `page` and `file_type`, is copied onto every chunk and stored in the database. That's what later lets an answer cite *\"annual_report_2025.pdf, page 2\"*.\n\nA **loader** is anything that returns Documents: LangChain's `BaseLoader` asks for one method, `lazy_load()`, which yields them one at a time. PDFs become **one Document per page** (as Markdown, so headings and tables keep their structure); text files become one Document each.\n\n**Files without a loader are reported, not ignored.** v1 can read PDF, Markdown, text and HTML. The corpus also has Word, Excel, PowerPoint, email, CSV, JSON, code and images: the run lists them as *unsupported*, and the scorecard shows what that costs. Module 2 adds their loaders.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.loaders",
+      "symbol": "PdfLoader",
+      "why": "A loader for PDFs: one Markdown Document per page.",
+      "notes": [
+       {
+        "match": "use_ocr=False",
+        "text": "Digital PDFs already have a text layer. OCR for scans is a later lesson."
+       },
+       {
+        "match": "meta = {\"source\": self.source, \"page\": page[\"metadata\"][\"page_number\"]",
+        "text": "Metadata travels with every chunk into the database."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.ingestion.loaders",
+      "symbol": "TextFileLoader",
+      "why": "Markdown, text and HTML files: one Document each.",
+      "notes": [
+       {
+        "match": "errors=\"replace\"",
+        "text": "One bad byte must not fail the whole file."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.ingestion.loaders",
+      "symbol": "discover",
+      "why": "Which files to ingest.",
+      "notes": [
+       {
+        "match": "sorted(",
+        "text": "A stable order makes runs reproducible."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.ingestion.loaders",
+      "symbol": "loader_for",
+      "why": "Picks the loader and the source id.",
+      "notes": [
+       {
+        "match": "relative_to(root)",
+        "text": "The source id: the path inside the data folder, the same on every machine."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Source ids must be **stable and unique**: they decide which chunks belong to which file when it changes or is deleted.",
+     "Real corpora have **scans** (need OCR), Word/PowerPoint files and email. Add a loader per type behind the same interface.",
+     "Load lazily and process **file by file** for large corpora: never hold every document in memory.",
+     "Loading is where most failures happen (corrupt PDFs, encodings). The pipeline catches errors **per file** and reports them."
+    ]
+   },
+   {
+    "id": "clean",
+    "title": "Clean",
+    "icon": "🧹",
+    "tagline": "Keep the knowledge, drop the noise",
+    "explain": "Whatever is in the index can come back as a search result, so noise costs you precision. Typical noise:\n\n- **HTML boilerplate:** navigation menus, cookie banners, scripts, footers. We keep `<main>` and drop the rest.\n- **Running headers and footers** in PDFs (*\"Confidential - Page 2 of 3\"*). They're spotted by appearing on most pages of the same file.\n- **Formatting** that carries no meaning: bold markers, runs of spaces and blank lines.\n\nEvery cleaning rule is a **pure function** (text in, text out), so each one has a unit test.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.cleaning",
+      "symbol": "clean_file",
+      "why": "Cleans all Documents of one file together.",
+      "notes": [
+       {
+        "match": "remove_repeated_lines(texts)",
+        "text": "Headers can only be detected across a file's pages, so cleaning works per file."
+       },
+       {
+        "match": "if d.page_content",
+        "text": "Blank pages are dropped, not indexed as empty chunks."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.ingestion.cleaning",
+      "symbol": "html_to_text",
+      "why": "The readable text of a web page.",
+      "notes": [
+       {
+        "match": "decompose",
+        "text": "Removes the tag and everything inside it."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.ingestion.cleaning",
+      "symbol": "remove_repeated_lines",
+      "why": "Running headers and footers.",
+      "notes": [
+       {
+        "match": "min_share",
+        "text": "A line on 60%+ of a file's pages is a header or footer, not content."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.ingestion.cleaning",
+      "symbol": "normalize",
+      "why": "Whitespace and formatting."
+     }
+    ],
+    "production": [
+     "Look at real samples of every source before writing rules. Each source has its own noise.",
+     "Keep the **raw** text too (or the original file) so you can re-clean without re-downloading.",
+     "Cleaning rules change over time. Re-ingest after a change, and incremental indexing re-embeds only the chunks whose text changed."
+    ]
+   },
+   {
+    "id": "chunk",
+    "title": "Chunk",
+    "icon": "✂️",
+    "tagline": "Pieces small enough to match a question precisely",
+    "explain": "Search compares a question with **chunks**, not whole documents. A chunk about one thing matches sharply; a chunk that mixes topics matches everything weakly. But a chunk must be big enough to hold a complete answer.\n\n`RecursiveCharacterTextSplitter` tries the **biggest natural boundary first**: Markdown headings, then paragraphs, lines, sentences, words. It only cuts mid-sentence when it has to. **Overlap** repeats a little text across a boundary, so a sentence that gets cut still appears whole in one chunk.\n\n**Try it:** set chunk size to 150 and run again, then run **Evaluate**. Measured on the 45 questions (top 5):\n\n| chunk size | chunks | hit@5 | precision@5 | nDCG@5 | answerable |\n|---|---|---|---|---|---|\n| 150 | 93 | **0.60** | **0.13** | **0.54** | 0.60 |\n| 250 | 59 | 0.58 | 0.12 | 0.48 | 0.64 |\n| 500 (v1 default) | 32 | 0.56 | 0.12 | 0.47 | 0.64 |\n| 1000 | 21 | 0.51 | 0.11 | 0.40 | 0.64 |\n\nSmaller chunks rank better on this corpus of short policy facts, but at 150 characters two answers get **cut in half** (answerable drops from 0.64 to 0.60): no chunk holds them whole any more. Small chunks also give the model less context per hit. Module 4 compares every splitter on this scorecard before we change the default.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.chunking",
+      "symbol": "build_splitter",
+      "why": "The splitter and its settings.",
+      "notes": [
+       {
+        "match": "keep_separator",
+        "text": "A heading stays at the top of the chunk it introduces."
+       },
+       {
+        "match": "add_start_index",
+        "text": "Each chunk records where it starts in its document."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.ingestion.chunking",
+      "symbol": "split_documents",
+      "why": "Splitting, filtering and numbering.",
+      "notes": [
+       {
+        "match": "min_chars",
+        "text": "A lone heading or page number carries no facts."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Chunk size is a **tuning parameter**: measure retrieval quality on a set of real questions at 2–3 sizes rather than guessing.",
+     "Structured documents deserve structure-aware splitting: keep tables whole, split contracts at clause boundaries.",
+     "Small chunks for matching, bigger context for answering: the *parent-document* pattern (a later lesson)."
+    ]
+   },
+   {
+    "id": "embed",
+    "title": "Embed",
+    "icon": "🔢",
+    "tagline": "Text becomes a vector that captures its meaning",
+    "explain": "An **embedding model** maps text to a vector: here 384 numbers. Texts with similar meaning get vectors that point in similar directions, which is what lets search work by meaning (*\"Can I work from home?\"* finds *Remote work* although the text never says \"home\").\n\nLangChain's `Embeddings` interface has two methods: `embed_documents` for chunks and `embed_query` for a question. `LocalEmbeddings` implements it with FastEmbed (`BAAI/bge-small-en-v1.5`), which runs on your CPU: free, private, no rate limits. `MeteredEmbeddings` wraps it to count texts and time, the numbers a production dashboard tracks.\n\n**Run ingestion twice:** the second run embeds **0** texts, because nothing changed.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.embeddings",
+      "symbol": "LocalEmbeddings",
+      "why": "The embedding model behind LangChain's interface.",
+      "notes": [
+       {
+        "match": "with self._lock",
+        "text": "Loaded once on first use, then shared safely by every thread."
+       },
+       {
+        "match": "batch_size=self.batch_size",
+        "text": "Embedding in batches is much faster than one text at a time."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.ingestion.embeddings",
+      "symbol": "MeteredEmbeddings",
+      "why": "Counts texts and time for monitoring.",
+      "notes": [
+       {
+        "match": "self.metrics.texts +=",
+        "text": "How many texts were embedded: in production, this is cost."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "**Every chunk and every question must use the same model.** Changing the model means re-embedding everything (store the model name with the index).",
+     "Hosted embedding APIs are stronger for some languages and domains, but cost money per token and need rate limiting and retries.",
+     "Embedding is the slowest step of ingestion. Batch it, and never re-embed unchanged text."
+    ]
+   },
+   {
+    "id": "store",
+    "title": "Store",
+    "icon": "🗄️",
+    "tagline": "Chunks and vectors in Postgres, written incrementally",
+    "explain": "**PGVectorStore** (from `langchain-postgres`) keeps one row per chunk in its own table: `content`, the `embedding` as a pgvector `vector(384)`, and real columns for the metadata we filter on (`source`, `page`, `file_type`). Everything else goes in a JSON column.\n\nLangChain's **`index()`** makes writing incremental. It hashes every chunk (content + metadata) and keeps the hashes in a **record manager** table (`upsertion_record`). On the next run:\n\n- a chunk with a known hash is **skipped**: no embedding, no write\n- a changed chunk is a new hash: it's **added**, and the old version is **deleted**\n- with `cleanup=\"full\"`, chunks of files that no longer exist are **deleted**.\n\nSo ingestion can run on a schedule, and it only pays for what changed.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.store",
+      "symbol": "VectorIndex",
+      "why": "The table, the record manager and their lifecycle.",
+      "notes": [
+       {
+        "match": "METADATA_COLUMNS]",
+        "text": "Real columns for metadata you filter on: indexable, typed SQL."
+       },
+       {
+        "match": "cleanup=\"full\" if full_sync",
+        "text": "full: the chunks given ARE the corpus, so anything else indexed before is deleted."
+       },
+       {
+        "match": "source_id_key=\"source\"",
+        "text": "Groups chunks by file, so a changed file replaces its own chunks."
+       },
+       {
+        "match": "key_encoder=\"sha256\"",
+        "text": "Chunk identity is a hash of content + metadata."
+       },
+       {
+        "match": "def __exit__",
+        "text": "Used with `with`: connections are always closed, even after an error."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Postgres + pgvector keeps vectors next to the metadata, with filters and joins, in one transactional database. A separate vector database is worth it at tens of millions of vectors.",
+     "Add an **HNSW index** on the embedding column once the table grows (`PGVectorStore.apply_vector_index`): exact search scans every row.",
+     "Run ingestion as a **background job** (queue + worker), not inside a web request, and alert on failures."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "Measure retrieval before changing anything",
+    "explain": "A RAG system you can't measure, you can't improve. The **evaluation set** has 45 questions about the Nimbus documents. Each lists the *evidence* that answers it (for example `24 days of paid annual leave`), and a chunk counts as relevant when it contains all of it. The labels don't depend on how documents are chunked, so the same questions compare any two pipelines fairly, and we can count the relevant chunks in the whole index.\n\nThe scorecard (the 📐 Retrieval metrics lab works each one out by hand):\n\n- **hit@k**: the share of questions with a relevant chunk in the top k. If it isn't retrieved, the model can't use it.\n- **precision@k**: the share of the k chunks that are relevant. The rest is noise the model reads and you pay for.\n- **recall@k**: the share of *all* relevant chunks that were returned. Matters when an answer spans chunks.\n- **nDCG@k** and **MAP@k**: is the order right? Relevant chunks count more near the top.\n- **MRR**: the mean of 1/rank of the first relevant chunk.\n- **coverage**: the share of questions whose source file is in the index at all. Hit rate can never be higher.\n- **answerable**: the share where some chunk holds the whole answer. Lower than coverage means chunking split answers apart.\n- **latency p50/p95**: what a typical user waits, and what the slowest 5% wait.\n- **slices**: the same metrics per question type and per source. An average can hide a type that always fails.\n\nBaseline v1 (chunk 500, top 5): hit@5 **0.56**, precision@5 **0.12**, recall@5 0.54, nDCG@5 0.47, MRR 0.46, coverage 0.64. Precision 0.12 means roughly 1 chunk in 5 is useful: reranking (Module 6) goes after that.\n\nEvery run is saved to the **history**, so each change gets a before/after: *\"smaller chunks (150) took hit@5 from 0.56 to 0.60 and nDCG@5 from 0.47 to 0.54, but answerability fell from 0.64 to 0.60\"*.",
+    "code": [
+     {
+      "module": "nimbus.rag.evaluation",
+      "symbol": "is_relevant",
+      "why": "Relevance by evidence, independent of chunking.",
+      "notes": [
+       {
+        "match": "all(normalize(e)",
+        "text": "Every evidence string must appear: a table answer needs both the row label and the value."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.evaluation",
+      "symbol": "evaluate",
+      "why": "Runs every question through a retriever and scores it.",
+      "notes": [
+       {
+        "match": "time.perf_counter()",
+        "text": "Latency is measured per question, so p95 shows the slow tail."
+       },
+       {
+        "match": "indexed_sources is None or",
+        "text": "A question whose file isn't indexed can't be found: that's a coverage gap, not a ranking failure."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.evaluation",
+      "symbol": "_report",
+      "why": "Every metric at k = 1, 3, 5, plus MRR, coverage, answerability, percentiles and slices.",
+      "notes": [
+       {
+        "match": "at = {m:",
+        "text": "hit, precision, recall, nDCG, MAP and F1 at each cutoff: on a small corpus @5 saturates, @1 still separates good from great."
+       },
+       {
+        "match": "answerable=",
+        "text": "Answerable < coverage means chunking split answers apart: the file is indexed, but no chunk holds the whole answer."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Build the evaluation set from **real user questions** (logs, support tickets), not only ones you invent. Refresh it as usage changes.",
+     "Run the evaluation in **CI** on every change to chunking, embeddings or retrieval, and block merges that drop hit rate or nDCG beyond a threshold.",
+     "Watch **precision@k** as well as hit rate: raising k always helps hit rate, but every extra chunk costs tokens and can distract the model. Choose k from the trade-off curve.",
+     "Keep **slices**: the overall number rose while one slice collapsed is the most common way RAG quality regresses unnoticed.",
+     "Retrieval metrics are half the story. Answer quality (faithfulness, correctness) is measured once there's an answer step (Module 7)."
+    ]
+   }
+  ],
+  "runner": "rag-ingestion"
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/config.py",
+   "role": "Settings from environment variables (chunk size, database URL, model)"
+  },
+  {
+   "path": "src/nimbus/rag/ingestion/loaders.py",
+   "role": "Step 1: files → Documents"
+  },
+  {
+   "path": "src/nimbus/rag/ingestion/cleaning.py",
+   "role": "Step 2: pure text-cleaning functions"
+  },
+  {
+   "path": "src/nimbus/rag/ingestion/chunking.py",
+   "role": "Step 3: the splitter"
+  },
+  {
+   "path": "src/nimbus/rag/ingestion/embeddings.py",
+   "role": "Step 4: the local embedding model + metrics"
+  },
+  {
+   "path": "src/nimbus/rag/ingestion/store.py",
+   "role": "Step 5: PGVectorStore + record manager"
+  },
+  {
+   "path": "src/nimbus/rag/ingestion/pipeline.py",
+   "role": "Runs the steps in order; per-file failures; reports"
+  },
+  {
+   "path": "src/nimbus/cli.py",
+   "role": "`rag ingest`, `rag search`, `rag stats`"
+  },
+  {
+   "path": "src/nimbus/rag/evaluation.py",
+   "role": "Evaluate: hit/precision/recall/nDCG/MAP@k, MRR, coverage, answerability, latency, slices"
+  },
+  {
+   "path": "data/eval/retrieval.json",
+   "role": "The 45-question evaluation set, with evidence"
+  },
+  {
+   "path": "tests/",
+   "role": "Unit tests for each step + an end-to-end test against Postgres"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Start the database (once)",
+   "cmd": "docker compose up -d"
+  },
+  {
+   "label": "Ingest from the terminal",
+   "cmd": "uv run nimbus rag ingest"
+  },
+  {
+   "label": "Score retrieval",
+   "cmd": "uv run nimbus rag eval"
+  },
+  {
+   "label": "Search the index",
+   "cmd": "uv run nimbus rag search \"How many vacation days do employees have?\""
+  },
+  {
+   "label": "Run the tests",
+   "cmd": "uv run pytest"
+  },
+  {
+   "label": "The course app",
+   "cmd": "uv run academy"
+  }
+ ]
+}

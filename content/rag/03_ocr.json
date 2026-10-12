@@ -1,0 +1,369 @@
+{
+ "track": "rag",
+ "id": "03",
+ "title": "OCR & document understanding",
+ "summary": "Some of Nimbus's knowledge has no text layer at all: a scanned staff notice, a phone photo of a café receipt, a revenue chart. Loaders v2 report them as unsupported, so four evaluation questions can't be answered. This module reads them: **Tesseract** (free, local), **preprocessing** for poor photos, word **confidence** and **layout**, a **hybrid PDF loader** that OCRs only scanned pages, a **vision model** that reads what Tesseract can't, **structured extraction** into validated fields, and **layout-aware parsing** of digital PDFs. Each is measured on the real files, including where it gets things wrong.",
+ "learn": [
+  "**OCR basics**: Tesseract on a clean image and a phone photo, and preprocessing (enlarge, even out lighting, stretch contrast)",
+  "**OCR layout**: words with boxes and confidence, reading order, page segmentation modes, orientation",
+  "**Scanned PDFs**: detect pages with no text layer, render them, OCR only those",
+  "**Vision-model OCR**: a model that sees, against Tesseract: quality, speed, cost, privacy, and invented text",
+  "**Structured extraction**: a receipt image into validated fields, two ways, with arithmetic checks",
+  "**Layout-aware parsing**: headings from font sizes, margins, two-column reading order, pymupdf4llm"
+ ],
+ "flow": "image file (.png .jpg) ─────────────────→ ImageLoader ─┐\nPDF page with a text layer ─────────────→ PyMuPDF4LLM ─┤\nPDF page without one (a scan) → render 300 dpi ────────┤\n                                                       ├→ read_image(engine) ─→ Document(extraction=\"ocr\", ocr_engine=…)\n          engine = tesseract (preprocess if small/flat) │        │\n                 | vision model (Markdown transcription)│        └─ cached by image hash (.cache/ocr)",
+ "labs": [
+  {
+   "lab": "rag.ocr-basics",
+   "icon": "🔍",
+   "covers": [
+    "rag.l13"
+   ],
+   "explain": "**OCR** turns pixels into characters. On a clean receipt Tesseract is nearly perfect; on a small, shadowed phone photo of the same receipt it produces garbage. **Preprocessing** (enlarge, divide by a blurred copy to remove the shadow, stretch the contrast) recovers most of it. The lab scores each version against the clean image's text, and checks the one fact a question needs: the total, 787.50.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.ocr",
+     "symbol": "preprocess",
+     "why": "Production's preprocessing.",
+     "notes": [
+      {
+       "match": "big.filter(ImageFilter.GaussianBlur(25))",
+       "text": "A heavy blur keeps the lighting and loses the text: dividing by it evens out the shadow."
+      },
+      {
+       "match": "ImageOps.autocontrast(",
+       "text": "Darkest to black, lightest to white."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.ocr",
+     "symbol": "needs_preprocessing",
+     "why": "Only small or low-contrast images are preprocessed.",
+     "notes": [
+      {
+       "match": "return min(image.size) < 600 or hi - lo < 200",
+       "text": "A clean scan reads better untouched."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.ocr-layout",
+   "icon": "🧭",
+   "covers": [
+    "rag.l14"
+   ],
+   "explain": "OCR knows more than the text: every word's **box** and a **confidence** score, **block and line numbers** (its reading order). **Page segmentation modes** tell Tesseract what layout to expect, and **orientation detection** finds a sideways page before reading it.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m03_ocr",
+     "symbol": "words_with_boxes",
+     "why": "image_to_data: words, boxes and confidence.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.rag.m03_ocr",
+     "symbol": "detect_orientation",
+     "why": "OSD: the rotation of a page.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.scanned-pdfs",
+   "icon": "🖨️",
+   "covers": [
+    "rag.l15"
+   ],
+   "explain": "A scanned PDF is a PDF of page images: a normal loader returns empty pages without any error. The lab detects pages with no text layer, renders them at 300 dpi, OCRs them, and runs production's **hybrid** PDF loader, which OCRs only the pages that need it.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.loaders",
+     "symbol": "PdfLoader",
+     "why": "Production's hybrid PDF loader.",
+     "notes": [
+      {
+       "match": "scanned = set(scanned_pages(self.path)) if self.ocr else set()",
+       "text": "Only pages without a text layer are OCR'd."
+      },
+      {
+       "match": "yield Document(ocr_text[n], metadata={**meta, \"extraction\": \"ocr\", \"ocr_engine\": self.ocr})",
+       "text": "OCR'd pages say so in metadata."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.ocr",
+     "symbol": "scanned_pages",
+     "why": "Detecting scanned pages.",
+     "notes": [
+      {
+       "match": "len(page.get_text().strip()) < min_chars",
+       "text": "Almost no characters: the page is an image of text."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.ocr",
+     "symbol": "render",
+     "why": "A page as an image.",
+     "notes": [
+      {
+       "match": "page.get_pixmap(dpi=dpi)",
+       "text": "300 dpi: the usual OCR resolution."
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "lab": "rag.vision-ocr",
+   "icon": "👁️",
+   "covers": [
+    "rag.l16"
+   ],
+   "explain": "A **vision model** reads an image the way a person does. The lab gives the phone photo, the scanned page and the revenue chart to Tesseract and to the vision model, and checks the fact each question needs: the receipt total, the closure date, the Q3 revenue. It also lists words the model wrote that aren't on the receipt.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.rag.ingestion.ocr",
+     "symbol": "read_image",
+     "why": "Production: one function, two engines, one cache.",
+     "notes": [
+      {
+       "match": "if engine == \"vision\":",
+       "text": "The engine is configuration (NIMBUS_OCR_ENGINE)."
+      },
+      {
+       "match": "if cache and path.exists():",
+       "text": "Cached by image hash: a vision call per page is paid once."
+      }
+     ]
+    },
+    {
+     "module": "nimbus.rag.ingestion.ocr",
+     "symbol": "image_message",
+     "why": "An image as a message content block.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.extraction",
+   "icon": "🧾",
+   "covers": [
+    "rag.l17"
+   ],
+   "explain": "Search needs text, but a receipt is really **fields**: store, date, bill number, items, totals. The lab fills one Pydantic schema two ways: **A**, the vision model reads the image; **B**, Tesseract's text goes to a text model. Then it **validates the numbers**: the items must add up to the subtotal, and subtotal plus tax must equal the total.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m03_ocr",
+     "symbol": "check_the_numbers",
+     "why": "Validation that needs no right answer.",
+     "notes": [
+      {
+       "match": "problems.append(\"nothing was extracted\")",
+       "text": "All zeros pass the sums: check for emptiness first."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.rag.m03_ocr",
+     "symbol": "receipt_as_a_document",
+     "why": "Fields → a searchable Document with filterable metadata.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "rag.layout",
+   "icon": "📐",
+   "covers": [
+    "rag.l18"
+   ],
+   "explain": "Digital PDFs carry their layout in **geometry**: font sizes, positions, columns. The lab turns page 1 of the annual report into Markdown by hand (big text becomes headings, text in the margins is dropped), shows why a two-column page must be read column by column, and compares with **pymupdf4llm**, production's PDF loader.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.rag.m03_ocr",
+     "symbol": "headings_from_font_size",
+     "why": "Headings and margins by hand.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.rag.m03_ocr",
+     "symbol": "reading_order_of_two_columns",
+     "why": "Column-aware reading order.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: Nimbus loaders v3 (OCR)",
+  "summary": "Loaders v3 read every file in the data folder: images through OCR, and scanned PDF pages through the hybrid PDF loader. The OCR engine is configuration (Tesseract by default; the vision model where scans and charts matter), every result is cached by image hash, and OCR'd Documents say so in metadata. The evaluation runs v2, v3 with Tesseract and v3 with the vision model on all 45 questions.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "detect",
+    "title": "Detect",
+    "icon": "🔎",
+    "tagline": "Which files and pages need OCR",
+    "explain": "Images (`.png`, `.jpg`) have no text by definition. A PDF page needs OCR when it has fewer than 20 characters of text: a scan. Digital pages keep their exact text layer, so OCR never replaces text that was already right.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.ocr",
+      "symbol": "scanned_pages",
+      "why": "Pages with no text layer.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.ingestion.loaders",
+      "symbol": "loader_for",
+      "why": "v3: images → ImageLoader, PDFs → the hybrid loader.",
+      "notes": [
+       {
+        "match": "if file_type == \"image\":",
+        "text": "Images go to OCR with the configured engine."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "Log how many pages were OCR'd per ingestion: a sudden jump usually means a scanner changed, not that you have more documents."
+    ]
+   },
+   {
+    "id": "read",
+    "title": "Read",
+    "icon": "📖",
+    "tagline": "Tesseract or a vision model, cached",
+    "explain": "`read_image()` is the one entry point. Tesseract preprocesses small or low-contrast images first; the vision model gets an exact-transcription instruction and its code fences are stripped. Every result is stored under a hash of the image and the engine, so re-ingesting the same scan costs nothing.",
+    "code": [
+     {
+      "module": "nimbus.rag.ingestion.ocr",
+      "symbol": "read_image",
+      "why": "One function, two engines.",
+      "notes": [
+       {
+        "match": "re.sub(r\"^```",
+        "text": "Models add code fences even when told not to."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.ingestion.ocr",
+      "symbol": "preprocess",
+      "why": "Preprocessing.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.rag.ingestion.ocr",
+      "symbol": "ImageLoader",
+      "why": "An image → one Document.",
+      "notes": [
+       {
+        "match": "\"extraction\": \"ocr\", \"ocr_engine\": self.engine",
+        "text": "How the text was obtained travels with every chunk."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "The vision model sends documents to a provider: check that's allowed for each document class (receipts with card data, HR scans) before enabling it.",
+     "Keep the source image: OCR text is a derivative, and answers from it may need checking against the original."
+    ]
+   },
+   {
+    "id": "configure",
+    "title": "Configure",
+    "icon": "⚙️",
+    "tagline": "The engine is a setting",
+    "explain": "`NIMBUS_LOADER_VERSION=v3` and `NIMBUS_OCR_ENGINE=tesseract|vision`. The pipeline passes the engine to the loaders only for v3.",
+    "code": [
+     {
+      "module": "nimbus.config",
+      "symbol": "Settings",
+      "why": "Settings.",
+      "notes": [
+       {
+        "match": "ocr_engine:",
+        "text": "Tesseract by default: free, local, private."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.rag.ingestion.pipeline",
+      "symbol": "IngestionPipeline.run",
+      "why": "The pipeline.",
+      "notes": [
+       {
+        "match": "ocr = self.settings.ocr_engine if self.settings.loader_version == \"v3\" else None",
+        "text": "No OCR in v1 and v2."
+       }
+      ]
+     }
+    ],
+    "production": [
+     "A per-folder engine (vision for /scans, Tesseract elsewhere) is a small extension when volumes differ."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "v2 vs v3 · Tesseract vs v3 · vision",
+    "lab": "rag.ocr-eval",
+    "explain": "Same chunking, embeddings and 45 questions; only the OCR differs. Measured: answerable 0.91 (v2) → 0.98 (Tesseract) → 1.00 (vision), hit@5 0.69 → 0.73 → 0.78. Tesseract misreads the scanned closure date ('44 March'), which only the vision model gets right; the vision model in turn added words that aren't on the receipt. Production ships Tesseract by default and the vision model where its quality is worth a request per page.",
+    "code": [
+     {
+      "module": "academy.labs.rag.m03_ocr",
+      "symbol": "evaluate_ocr",
+      "why": "Three corpora, one evaluation.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Re-run when the OCR engine or its settings change: OCR regressions are silent (the text just gets worse).",
+     "Track how many answers cite OCR'd chunks: those deserve a confidence warning in the UI."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/rag/ingestion/ocr.py",
+   "role": "Preprocessing, read_image (Tesseract | vision), cache, ImageLoader, scanned pages"
+  },
+  {
+   "path": "src/nimbus/rag/ingestion/loaders.py",
+   "role": "v3: images and the hybrid PDF loader"
+  },
+  {
+   "path": "src/academy/labs/rag/m03_ocr.py",
+   "role": "The labs"
+  },
+  {
+   "path": "tests/test_ocr.py",
+   "role": "Scanned-page detection, preprocessing choice, cache, v3 loading"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Install Tesseract (once)",
+   "cmd": "brew install tesseract"
+  },
+  {
+   "label": "Ingest with OCR (Tesseract)",
+   "cmd": "uv run nimbus rag ingest"
+  },
+  {
+   "label": "Ingest with the vision model",
+   "cmd": "NIMBUS_OCR_ENGINE=vision uv run nimbus rag ingest"
+  },
+  {
+   "label": "OCR tests",
+   "cmd": "uv run pytest tests/test_ocr.py"
+  }
+ ]
+}

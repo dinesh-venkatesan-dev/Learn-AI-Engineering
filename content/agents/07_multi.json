@@ -1,0 +1,313 @@
+{
+ "track": "agents",
+ "id": "07",
+ "title": "Multi-agent systems",
+ "summary": "One agent with every tool is the simplest design; this module covers everything else and measures whether it's worth it. Graphs inside graphs (shared keys, different schemas, persistence modes, failures inside them). Supervisors that delegate, routers that plan once and run specialists in parallel, handoffs that move one conversation between steps or agents, skills loaded only when needed, teams of supervisors, and the Functional API for plain-Python workflows. The product gets a Nimbus assistant: one entry point for any customer question, built from three specialists (the support desk, the RAG answerer, a café agent with skills), and shipped in the architecture the evaluation picked.",
+ "learn": [
+  "**Subgraphs and Send**: map-reduce, shared keys vs different schemas, one checkpointer, looking inside a paused subgraph",
+  "**Subgraphs in depth**: persistence modes, interrupts, crashes and where retries belong",
+  "**Supervisors**: subagents as tools; a structured supervisor loop with shared notes and code guards",
+  "**Routers**: one planning call, specialists in parallel, a combine step, no specialist for small talk",
+  "**Handoffs**: steps that swap prompts and tools; agents passing control with Command.PARENT",
+  "**Skills**: progressive disclosure, extra files, tools unlocked by a skill",
+  "**Hierarchical teams**, and the **Functional API** (@task, @entrypoint, determinism, retries, caching, timeouts)"
+ ],
+ "flow": "customer question ─→ ARCHITECTURE (single agent | router | supervisor)\n                         ├─ account   → the support desk (read-only)           Agents 4–6\n                         ├─ knowledge → the RAG answerer, public documents      RAG 7\n                         └─ cafe      → menu + skills (allergens, catering)     this module",
+ "labs": [
+  {
+   "lab": "agents.subgraphs",
+   "icon": "🧩",
+   "covers": [
+    "lc.l52",
+    "lg.l38"
+   ],
+   "explain": "A basket priced line by line with **Send**, a payment graph as a node (**shared keys**, and the log those keys duplicated), the support desk called from another graph's node (**different schemas**), and a **paused subgraph** inspected with get_state(subgraphs=True).\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m07_multi",
+     "symbol": "map_reduce_with_send",
+     "why": "Send.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m07_multi",
+     "symbol": "shared_keys",
+     "why": "A graph as a node.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.subgraphs-depth",
+   "icon": "🪆",
+   "covers": [
+    "lg.l39"
+   ],
+   "explain": "A subgraph in each **persistence mode**, an **interrupt** inside one (the lookup ran once vs twice), a **crash** inside one, and where a **RetryPolicy** belongs.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m07_multi",
+     "symbol": "persistence_modes",
+     "why": "Persistence modes.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m07_multi",
+     "symbol": "crash_and_retry",
+     "why": "Crashes and retries.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.supervisor",
+   "icon": "🧑‍✈️",
+   "covers": [
+    "lc.l36",
+    "lg.l40"
+   ],
+   "explain": "A two-part question through a create_agent supervisor whose tools are **subagents**, and through the assistant's **LangGraph supervisor** loop with shared notes.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.assistant.architectures",
+     "symbol": "build_supervisor",
+     "why": "The supervisor loop.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.router",
+   "icon": "🔀",
+   "covers": [
+    "lc.l37"
+   ],
+   "explain": "The assistant's **router**: one planning call, two specialists **in parallel**, a combine step; **no specialist** for small talk; and the stateless router as a tool of a **chat agent with memory**.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.assistant.architectures",
+     "symbol": "build_router",
+     "why": "The router.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.handoffs",
+   "icon": "🤝",
+   "covers": [
+    "lc.l38",
+    "lg.l41"
+   ],
+   "explain": "A damaged-order conversation through **steps** (identify → diagnose → resolve) that swap prompts and **unlock tools**, and a barista agent **handing off** to support with Command.PARENT, no supervisor.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m07_multi",
+     "symbol": "step_handoffs",
+     "why": "Steps.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m07_multi",
+     "symbol": "swarm",
+     "why": "A swarm.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.skills",
+   "icon": "📚",
+   "covers": [
+    "lc.l39"
+   ],
+   "explain": "The café specialist's **skills**: descriptions always in the prompt, full instructions **loaded when needed**, an allergen **table file**, and catering_quote **unlocked** by the catering skill.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "nimbus.assistant.skills",
+     "symbol": "skill_tools",
+     "why": "load_skill, read_skill_file, catering_quote.",
+     "notes": []
+    },
+    {
+     "module": "nimbus.assistant.skills",
+     "symbol": "unlock_tools",
+     "why": "Tools unlocked by skills.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.hierarchical",
+   "icon": "🏢",
+   "covers": [
+    "lg.l42"
+   ],
+   "explain": "Two **teams** under a top supervisor. In this run the top asked the same team twice, the **guard** ended the loop, and the second part of the question went unanswered: guards stop loops, they don't fix routing.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m07_multi",
+     "symbol": "top_supervisor",
+     "why": "Teams of supervisors.",
+     "notes": []
+    }
+   ]
+  },
+  {
+   "lab": "agents.functional-api",
+   "icon": "🐍",
+   "covers": [
+    "lg.l43",
+    "lg.l44"
+   ],
+   "explain": "An order with **@task** and **@entrypoint** (parallel tasks, an interrupt, a resume that doesn't repeat finished tasks, `previous`), then **injected parameters**, **entrypoint.final**, **determinism**, **retries**, **caching**, **timeouts** and a Graph-API graph called from an entrypoint.\n\nAfter a run, **What it covers** shows each learning point with the few lines of code that do it and what they produced.",
+   "code": [
+    {
+     "module": "academy.labs.agents.m07_multi",
+     "symbol": "functional_basics",
+     "why": "@task and @entrypoint.",
+     "notes": []
+    },
+    {
+     "module": "academy.labs.agents.m07_multi",
+     "symbol": "functional_depth",
+     "why": "In depth.",
+     "notes": []
+    }
+   ]
+  }
+ ],
+ "path": {
+  "title": "Production path: the Nimbus assistant",
+  "summary": "Customers get one assistant for any question. Three specialists sit behind it: the support desk (read-only; changes go through the desk with approvals), the RAG answerer on public documents, and a café agent with skills. Three architectures were built on the same specialists and tools, and the evaluation picked the one that ships.",
+  "covers": [],
+  "steps": [
+   {
+    "id": "specialists",
+    "title": "Specialists",
+    "icon": "🧑‍🔧",
+    "tagline": "Three specialists, one interface",
+    "explain": "`Specialists.ask(name, customer_id, question)` hides what each one is: a LangGraph desk, a RAG pipeline, a create_agent with skills. Any architecture can use them as functions, tools or nodes.",
+    "code": [
+     {
+      "module": "nimbus.assistant.specialists",
+      "symbol": "build_specialists",
+      "why": "The specialists.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.assistant.specialists",
+      "symbol": "cafe_agent",
+      "why": "The café agent with skills.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Give every specialist the same interface: architectures then become a choice, not a rewrite."
+    ]
+   },
+   {
+    "id": "architectures",
+    "title": "Architectures",
+    "icon": "🏗️",
+    "tagline": "Single, router, supervisor",
+    "explain": "The single agent gets every tool. The router plans once, runs specialists in parallel and combines their answers. The supervisor loops, deciding the next specialist each round, under code guards (at most three, no repeats). The router's tasks keep the customer's own words: rephrased (\"free shipping policies and conditions\"), the RAG answerer refused a question it answered in the customer's words.",
+    "code": [
+     {
+      "module": "nimbus.assistant.architectures",
+      "symbol": "build_single",
+      "why": "One agent.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.assistant.architectures",
+      "symbol": "build_router",
+      "why": "The router.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.assistant.architectures",
+      "symbol": "Task",
+      "why": "A router task.",
+      "notes": [
+       {
+        "match": "question: str = Field(description=\"The customer's own words for this specialist's part, not rephrased\")",
+        "text": "Measured: rephrasing lost answers."
+       }
+      ]
+     },
+     {
+      "module": "nimbus.assistant.architectures",
+      "symbol": "build_supervisor",
+      "why": "The supervisor.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Re-run the comparison when the number of specialists grows: the single agent's prompt grows with every tool."
+    ]
+   },
+   {
+    "id": "evaluate",
+    "title": "Evaluate",
+    "icon": "📏",
+    "tagline": "14 questions, three architectures",
+    "lab": "agents.assistant-eval",
+    "explain": "Questions for one specialist (knowledge, account, café), two-part questions, and small talk, scored on the facts in the reply, with model calls, tokens and latency counted across the whole run (specialists included).\n\n| | correct | two-part questions | model calls | tokens | p50 |\n|---|---|---|---|---|---|\n| single agent | 13/14 | 3/3 | **2.36** | 2,639 | **6.1 s** |\n| **router** | **14/14** | 3/3 | 3.14 | **1,814** | 10.2 s |\n| supervisor | 13/14 | 3/3 | 6.93 | 4,288 | 20.6 s |\n\nThe router ships (`NIMBUS_ASSISTANT_ARCHITECTURE=router`, the default). It was the only one with every answer right, and it used the fewest tokens: each specialist sees only its own short prompt, not one prompt describing every tool. It is the slowest of the two good options (10.2 s vs 6.1 s p50), because the plan is one more call before any specialist starts. The margin is one question. The single agent asked a customer for their order number instead of calling my_orders. The supervisor answered small talk by consulting three specialists and writing a summary nobody asked for.",
+    "code": [
+     {
+      "module": "academy.labs.agents.m07_multi",
+      "symbol": "evaluate_assistants",
+      "why": "The evaluation.",
+      "notes": []
+     },
+     {
+      "module": "nimbus.assistant.evaluation",
+      "symbol": "correct",
+      "why": "Scoring.",
+      "notes": []
+     }
+    ],
+    "production": [
+     "Score negated answers as wrong: \"I can't confirm it's vegan\" contains the word vegan."
+    ]
+   }
+  ]
+ },
+ "layout": [
+  {
+   "path": "src/nimbus/assistant/specialists.py",
+   "role": "Account, knowledge and café specialists"
+  },
+  {
+   "path": "src/nimbus/assistant/architectures.py",
+   "role": "Single agent, router, supervisor"
+  },
+  {
+   "path": "src/nimbus/assistant/skills.py",
+   "role": "Skills: loading, progressive disclosure, unlocked tools"
+  },
+  {
+   "path": "data/skills/",
+   "role": "Three skills (catering, complaints, dietary + allergen table)"
+  },
+  {
+   "path": "src/nimbus/assistant/evaluation.py",
+   "role": "Scoring"
+  },
+  {
+   "path": "data/eval/assistant_questions.json",
+   "role": "14 questions"
+  },
+  {
+   "path": "src/academy/labs/agents/m07_multi.py",
+   "role": "The labs"
+  }
+ ],
+ "commands": [
+  {
+   "label": "Ask the assistant",
+   "cmd": "uv run nimbus assistant ask --customer c-5005 \"Where is my order NC-78123, and is the cold brew vegan?\""
+  }
+ ]
+}
