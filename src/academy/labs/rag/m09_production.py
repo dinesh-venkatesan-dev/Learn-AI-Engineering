@@ -672,6 +672,14 @@ def tokens_per_k(question, ks):
   return out  # the context grows with k: the main cost lever
 
 
+def answer_with_cache(answerer, question, cache):
+  key = " ".join(question.lower().split())  # identical questions (case and spacing aside) share one entry
+  if key not in cache:
+    cache[key] = answerer.answer(question)  # only the first ask runs retrieval and the model calls
+  result = cache[key]
+  return result
+
+
 async def concurrently(prompts):
   from langchain.chat_models import init_chat_model
 
@@ -690,7 +698,7 @@ def stream_with_sources(model, question, sources):
     yield {"token": piece.text}
 
 
-@lab("rag.performance", "Performance and cost: where time and tokens go", uses_model=True, calls="~12 calls to Mistral")
+@lab("rag.performance", "Performance and cost: where time and tokens go", uses_model=True, calls="~16 calls to Mistral")
 def performance():
   """Timing split, tokens per k, sequential vs concurrent calls, and streaming with sources first."""
   model = get_chat_model()
@@ -706,6 +714,13 @@ def performance():
   started = time.perf_counter()
   asyncio.run(concurrently(prompts))
   parallel = time.perf_counter() - started
+  cache, cached = {}, []
+  for asked in (question, "  how long is PARENTAL leave? "):  # the same question, typed differently
+    started = time.perf_counter()
+    answer_with_cache(answerer, asked, cache)
+    cached.append([asked.strip(), f"{(time.perf_counter() - started) * 1000:.0f} ms"])
+  cached[0].append("retrieval + model")
+  cached[1].append("cache" if len(cache) == 1 else "retrieval + model")
   _, hits = _retriever().search(question, k=3)
   started = time.perf_counter()
   first_token, events, text = None, [], ""
@@ -763,6 +778,15 @@ def performance():
       tokens_per_k,
       "",
       [table(["k", "tokens"], [[k, v] for k, v in per_k.items()])],
+    ),
+    example(
+      "rag.l53.3",
+      "Caching: identical questions answered for free",
+      answer_with_cache,
+      "An exact-match cache in front of the whole RAG pipeline: the second ask is the same question with different "
+      "case and spacing, so it's served from memory with no retrieval and no model call. Production 02 adds what a "
+      "real cache needs: expiry, invalidation when documents change, and semantic matching for reworded questions.",
+      [table(["Question", "Time", "Answered by"], cached)],
     ),
     example(
       "rag.l53.4",

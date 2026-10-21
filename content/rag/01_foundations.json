@@ -24,16 +24,34 @@
    "code": [
     {
      "module": "academy.labs.rag.m01_foundations",
-     "symbol": "why_rag",
-     "why": "The three approaches, side by side.",
+     "symbol": "stuff_everything",
+     "why": "Context stuffing: the whole corpus in every prompt.",
      "notes": [
       {
        "match": "everything =",
        "text": "Context stuffing: every document, every time."
-      },
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.rag.m01_foundations",
+     "symbol": "retrieve_then_answer",
+     "why": "RAG: search first, then answer from what was found.",
+     "notes": [
       {
-       "match": "top = _semantic_rank",
+       "match": "rank_by_meaning(question",
        "text": "RAG: only the 3 most relevant chunks."
+      }
+     ]
+    },
+    {
+     "module": "academy.labs.rag.m01_foundations",
+     "symbol": "why_rag",
+     "why": "The three approaches, side by side.",
+     "notes": [
+      {
+       "match": "reply = ask(model, question)",
+       "text": "The same question, asked each way; tokens and latency measured per call."
       }
      ]
     }
