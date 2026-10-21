@@ -33,11 +33,21 @@ def test_unbuilt_module_is_404():
     assert client.get("/api/modules/production/07").status_code == 404  # still planned: no page yet
 
 
-def test_lab_runs_with_coerced_inputs():
-  with TestClient(create_app()) as client:
+def test_lab_runs_with_coerced_inputs(tmp_path):
+  with TestClient(create_app(lab_results=tmp_path)) as client:
     result = client.post("/api/labs/rag.semantic-search/run", json={"query": "Can I work from home?"}).json()
     assert result["views"][0]["type"] == "results"
     assert client.get("/api/labs/rag.semantic-search/last").json()["inputs"] == {"query": "Can I work from home?"}
+
+
+def test_last_lab_result_survives_a_restart(tmp_path):
+  with TestClient(create_app(lab_results=tmp_path)) as client:
+    ran = client.post("/api/labs/rag.semantic-search/run", json={"query": "Can I work from home?"}).json()
+  with TestClient(create_app(lab_results=tmp_path)) as client:  # a fresh app: nothing in memory
+    last = client.get("/api/labs/rag.semantic-search/last").json()
+    assert last == ran  # views and the "What it covers" examples, exactly as they were
+    assert client.get("/api/labs/rag.keyword-search/last").json() is None  # never run: the page offers ▶ Run
+    assert client.get("/api/labs/no-such-lab/last").status_code == 404
 
 
 @pytest.mark.db

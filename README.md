@@ -131,7 +131,8 @@ Every setting comes from an environment variable (prefix `NIMBUS_`) or `.env`:
 └── docker-compose.yml
 ```
 
-`.state/` keeps the scorecard histories and saved conversations (git-ignored).
+`.state/` keeps the scorecard histories, saved conversations and each lab's last result, so a restart keeps your
+runs (git-ignored; delete a file in `.state/labs/` to clear that lab).
 
 ## Clean up
 

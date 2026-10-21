@@ -10,9 +10,11 @@ import threading
 from collections.abc import Iterator
 from contextlib import asynccontextmanager
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Annotated, Any
 
 from fastapi import Body, Depends, FastAPI, HTTPException, Request, status
+from fastapi.encoders import jsonable_encoder
 from fastapi.sse import EventSourceResponse, ServerSentEvent
 from fastapi.staticfiles import StaticFiles
 from langchain_core.documents import Document
@@ -73,6 +75,23 @@ log = logging.getLogger(__name__)
 FRONTEND_DIR = PROJECT_DIR / "frontend" / "dist"
 STATE_DIR = PROJECT_DIR / ".state"  # scorecard history (git-ignored)
 HISTORY = STATE_DIR / "rag_scorecards.jsonl"
+LAB_RESULTS = STATE_DIR / "labs"  # each lab's last result, so a restart doesn't empty the page
+
+
+def save_lab_result(folder: Path, lab_id: str, result: dict) -> None:
+  folder.mkdir(parents=True, exist_ok=True)
+  path = folder / f"{lab_id}.json"
+  partial = path.with_suffix(".tmp")
+  partial.write_text(json.dumps(jsonable_encoder(result), ensure_ascii=False))
+  partial.replace(path)  # atomic: a crash mid-write never leaves a half-written result
+
+
+def load_lab_result(folder: Path, lab_id: str) -> dict | None:
+  path = folder / f"{lab_id}.json"
+  try:
+    return json.loads(path.read_text())
+  except (OSError, ValueError):  # never run here, or unreadable: the page just shows "Run lab"
+    return None
 
 
 @asynccontextmanager
@@ -90,9 +109,10 @@ async def lifespan(app: FastAPI):
   await aclose_clients()  # the cached model clients' HTTP connections
 
 
-def create_app(settings: Settings | None = None) -> FastAPI:
+def create_app(settings: Settings | None = None, lab_results: Path = LAB_RESULTS) -> FastAPI:
   app = FastAPI(title="Nimbus academy", lifespan=lifespan)
   app.state.settings = settings or get_settings()
+  app.state.lab_results = lab_results
 
   @app.get("/api/health")
   def health() -> dict:
@@ -168,11 +188,22 @@ def create_app(settings: Settings | None = None) -> FastAPI:
       log.exception("lab %s failed", lab_id)
       raise HTTPException(status.HTTP_500_INTERNAL_SERVER_ERROR, f"{type(error).__name__}: {error}") from None
     request.app.state.last_labs[lab_id] = result
+    try:
+      save_lab_result(request.app.state.lab_results, lab_id, result)
+    except OSError:  # the run still succeeded: show it, it just won't survive a restart
+      log.warning("couldn't save the result of lab %s", lab_id, exc_info=True)
     return result
 
   @app.get("/api/labs/{lab_id}/last")
   def last_lab(request: Request, lab_id: str) -> dict | None:
-    return request.app.state.last_labs.get(lab_id)
+    if lab_id not in REGISTRY:  # only known ids reach the file system
+      raise HTTPException(status.HTTP_404_NOT_FOUND, f"No lab {lab_id}")
+    last = request.app.state.last_labs.get(lab_id)
+    if last is None:
+      last = load_lab_result(request.app.state.lab_results, lab_id)
+      if last is not None:
+        request.app.state.last_labs[lab_id] = last
+    return last
 
   # ── Production path: ingestion ───────────────────────────────────────────────
   def run_settings(request: Request, chunk_size: int | None = None, chunk_overlap: int | None = None) -> Settings:
