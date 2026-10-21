@@ -13,6 +13,8 @@ from collections.abc import Callable
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal
 
+from academy.labs.model_calls import recording
+
 View = dict[str, Any]
 
 
@@ -63,13 +65,15 @@ class Lab:
         value = spec.default
       args[spec.name] = value
     started = time.perf_counter()
-    views = self.fn(**args)
+    with recording() as recorder:  # every chat-model call, for the "What the model saw" tab
+      views = self.fn(**args)
     return {
       "lab": self.id,
       "inputs": args,
       "ms": round((time.perf_counter() - started) * 1000),
       "views": [v for v in views if v["type"] != "example"],  # the Run tab: results only
       "examples": [v for v in views if v["type"] == "example"],  # the Covers tab: code per learning point
+      "model_calls": recorder.result(),
     }
 
 
@@ -129,6 +133,30 @@ def results(hits: list[dict[str, Any]], title: str = "", score_label: str = "sco
 def bars(items: list[dict[str, Any]], title: str = "", unit: str = "", max_value: float | None = None) -> View:
   """Grouped horizontal bars: items = [{label, values: {series: number}}]."""
   return {"type": "bars", "title": title, "unit": unit, "items": items, "max": max_value}
+
+
+def radar(points: list[dict[str, Any]], rings: list[float], title: str = "") -> View:
+  """A map around one centre (the query): points = [{x, y, label, text, rank?}], at their true distance from the
+  centre; rings = distances to draw as circles (labelled with the similarity they stand for: 1 - distance)."""
+  return {"type": "radar", "title": title, "points": points, "rings": rings}
+
+
+def highlight(text: str, spans: list[tuple[int, int]], title: str = "") -> View:
+  """A passage with each chunk in its own colour: spans = [(start, end)] character positions in `text`, in order.
+  Text inside two spans is overlap; text inside none was dropped by the splitter."""
+  return {"type": "highlight", "title": title, "text": text, "spans": [list(s) for s in spans]}
+
+
+def spans_of(text: str, chunks: list[str]) -> list[tuple[int, int]]:
+  """Where each chunk sits in the text it was cut from (chunks overlap, so search from just after the last start)."""
+  spans, start = [], 0
+  for chunk in chunks:
+    at = text.find(chunk, start)
+    if at < 0:
+      continue  # the splitter changed the text (stripped or joined it): skip rather than guess
+    spans.append((at, at + len(chunk)))
+    start = at + 1
+  return spans
 
 
 def answer(text: str, title: str = "", meta: dict[str, Any] | None = None) -> View:

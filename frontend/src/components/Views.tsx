@@ -1,4 +1,5 @@
 // Generic renderers for what a lab returns. Every lab in every module reuses these.
+import { useState } from "react";
 import type { MetricSpec, View } from "../types";
 import { formatMetric } from "../format";
 import { Snippet } from "./CodeBlock";
@@ -70,6 +71,8 @@ export function ViewBlock({ view }: { view: View }) {
         <pre className="max-h-[28rem] overflow-auto rounded-xl bg-zinc-900 p-4 font-mono text-[13px] leading-relaxed text-zinc-100 dark:bg-black">{view.text}</pre>
       </div>
     );
+    case "radar": return <RadarView view={view} />;
+    case "highlight": return <HighlightView view={view} />;
     case "example": return <ExampleView view={view} step={0} />;
     case "columns": return (
       <div><Title>{view.title}</Title>
@@ -182,6 +185,79 @@ function BarsView({ view }: { view: Extract<View, { type: "bars" }> }) {
               <span className={`w-12 text-right font-mono text-xs ${SERIES_TEXT[i % 4]}`}>{(item.values[s] ?? 0).toFixed(2)}</span>
             </div>))}</div>
         </div>))}</div>
+    </div>
+  );
+}
+
+/** The query at the centre, every chunk at its true distance from it: closer to the centre = more similar. */
+function RadarView({ view }: { view: Extract<View, { type: "radar" }> }) {
+  const [active, setActive] = useState(() => view.points.findIndex((p) => p.rank === 1));
+  const size = 360, c = size / 2;
+  const reach = Math.max(...view.rings, ...view.points.map((p) => Math.hypot(p.x, p.y)), 1e-9);
+  const scale = (c - 16) / reach;
+  const shown = view.points[active];
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"><Title>{view.title}</Title>
+      <div className="flex flex-col items-center gap-4 lg:flex-row lg:items-start">
+        <svg viewBox={`0 0 ${size} ${size}`} className="w-full max-w-[360px] shrink-0" role="img" aria-label={view.title}>
+          {view.rings.map((r) => <circle key={r} cx={c} cy={c} r={r * scale} className="fill-none stroke-zinc-200 dark:stroke-zinc-700" strokeDasharray="3 3" />)}
+          {view.points.map((p, i) => (
+            <g key={i} onMouseEnter={() => setActive(i)} onClick={() => setActive(i)} className="cursor-pointer">
+              <circle cx={c + p.x * scale} cy={c - p.y * scale} r={p.rank ? 7 : 4.5}
+                className={`${p.rank ? "fill-sky-500" : "fill-zinc-300 dark:fill-zinc-600"} ${i === active ? "stroke-zinc-900 dark:stroke-white" : "stroke-transparent"}`} strokeWidth={2} />
+              {p.rank ? <text x={c + p.x * scale} y={c - p.y * scale + 3} textAnchor="middle" className="pointer-events-none fill-white text-[8px] font-bold">{p.rank}</text> : null}
+            </g>))}
+          <text x={c} y={c + 6} textAnchor="middle" className="fill-amber-500 text-[18px]">★</text>
+          {view.rings.map((r) => (  /* labels last, with a halo, so dots never hide them */
+            <text key={r} x={c} y={c - r * scale + 3} textAnchor="middle" style={{ paintOrder: "stroke" }} strokeWidth={4}
+              className="pointer-events-none fill-zinc-500 stroke-white text-[9px] font-medium dark:fill-zinc-400 dark:stroke-zinc-900">similarity {(1 - r).toFixed(2)}</text>))}
+        </svg>
+        <div className="min-w-0 flex-1 space-y-2 text-sm">
+          <div className="flex flex-wrap gap-4 text-xs text-zinc-500">
+            <span><span className="text-amber-500">★</span> your query</span>
+            <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-sky-500" />top results (numbered)</span>
+            <span className="flex items-center gap-1.5"><span className="size-2.5 rounded-full bg-zinc-300 dark:bg-zinc-600" />other chunks</span>
+          </div>
+          {shown ? (
+            <div className="rounded-xl border border-zinc-200 p-3 dark:border-zinc-800">
+              <div className="font-mono text-xs text-zinc-500">{shown.rank ? `#${shown.rank} · ` : ""}{shown.label}</div>
+              <p className="mt-1 line-clamp-6 whitespace-pre-wrap text-zinc-600 dark:text-zinc-400">{shown.text}</p>
+            </div>
+          ) : null}
+          <p className="text-xs text-zinc-500">Hover or tap a dot to read the chunk.</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+const CHUNK_BG = ["bg-sky-100 dark:bg-sky-500/20", "bg-amber-100 dark:bg-amber-500/20", "bg-emerald-100 dark:bg-emerald-500/20", "bg-violet-100 dark:bg-violet-500/20"];
+
+/** A passage with each chunk in its own colour: overlap (text in two chunks) is underlined, dropped text is struck. */
+function HighlightView({ view }: { view: Extract<View, { type: "highlight" }> }) {
+  const cuts = [...new Set([0, view.text.length, ...view.spans.flat()])].filter((n) => n >= 0 && n <= view.text.length).sort((a, b) => a - b);
+  const pieces = cuts.slice(0, -1).map((start, i) => {
+    const end = cuts[i + 1];
+    const inside = view.spans.map((s, n) => (s[0] <= start && end <= s[1] ? n : -1)).filter((n) => n >= 0);
+    return { start, end, inside };
+  }).filter((p) => p.end > p.start);
+  const firsts = new Set(view.spans.map((s) => s[0]));
+  return (
+    <div className="rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800 dark:bg-zinc-900"><Title>{view.title}</Title>
+      <p className="whitespace-pre-wrap font-mono text-[13px] leading-7">
+        {pieces.map((p) => {
+          const n = p.inside[p.inside.length - 1];
+          const style = p.inside.length === 0 ? "text-zinc-400 line-through"
+            : `${CHUNK_BG[n % CHUNK_BG.length]} ${p.inside.length > 1 ? "underline decoration-rose-500 decoration-2 underline-offset-4" : ""}`;
+          return (
+            <span key={p.start} className={style}>
+              {firsts.has(p.start) ? <sup className="mr-0.5 rounded bg-zinc-800 px-1 font-sans text-[9px] font-bold text-white dark:bg-zinc-200 dark:text-zinc-900">{view.spans.findIndex((s) => s[0] === p.start) + 1}</sup> : null}
+              {view.text.slice(p.start, p.end)}
+            </span>
+          );
+        })}
+      </p>
+      <p className="mt-3 text-xs text-zinc-500">Each colour is one chunk (numbered where it starts) · <span className="underline decoration-rose-500 decoration-2 underline-offset-4">underlined</span> = in two chunks (overlap) · <span className="line-through">struck</span> = in no chunk</p>
     </div>
   );
 }

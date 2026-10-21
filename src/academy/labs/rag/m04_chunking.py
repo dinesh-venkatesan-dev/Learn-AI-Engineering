@@ -17,8 +17,10 @@ from academy.labs.runtime import (
   code,
   columns,
   example,
+  highlight,
   lab,
   scorecard,
+  spans_of,
   table,
 )
 from nimbus.config import get_settings
@@ -120,6 +122,40 @@ def size_on_real_questions(sizes):
   return results
 
 
+def _highlighted(text: str, ways: dict[str, list[str]], size: int, overlap: int) -> list:
+  """The same opening passage under each splitter, every chunk in its own colour."""
+  window = min(len(text), max(900, size * 4))
+  views = []
+  for name, chunks in ways.items():
+    spans = [(a, min(b, window)) for a, b in spans_of(text, chunks) if a < window]
+    cut_words = sum(1 for _, b in spans if 0 < b < window and text[b - 1].isalnum() and text[b].isalnum())
+    shared = sum(max(0, spans[i][1] - spans[i + 1][0]) for i in range(len(spans) - 1))
+    title = f"{name}: {len(spans)} chunks here, {cut_words} cut mid-word, {shared} characters in two chunks"
+    views.append(highlight(text[:window], spans, title=title))
+  return views + [_overlap_reality(size, overlap)]
+
+
+def _overlap_reality(size: int, overlap: int) -> dict:
+  """How often recursive splitting's overlap actually repeats text, measured on every v1 document."""
+  from langchain_text_splitters import RecursiveCharacterTextSplitter
+
+  splitter = RecursiveCharacterTextSplitter(chunk_size=size, chunk_overlap=overlap)
+  pairs = shared = 0
+  for d in corpus.documents("v1"):
+    spans = spans_of(d.page_content, splitter.split_text(d.page_content))
+    pairs += max(0, len(spans) - 1)
+    shared += sum(1 for i in range(len(spans) - 1) if spans[i][1] > spans[i + 1][0])
+  return callout(
+    f"With chunk_size={size} and chunk_overlap={overlap}, {'only ' if shared < pairs / 4 else ''}"
+    f"**{shared} of {pairs}** neighbouring chunk pairs in the whole corpus share any text. The recursive splitter "
+    "carries over only whole pieces (a paragraph, a line or a word) that fit inside the overlap. When a chunk ends "
+    "at a paragraph break, that paragraph is longer than the overlap, so nothing is repeated. Overlap only takes "
+    "effect where a chunk has to be cut inside a paragraph: set a small chunk size to see it.",
+    "info",
+    "How often overlap really applies",
+  )
+
+
 @lab(
   "rag.splitters",
   "Splitting by characters: fixed, paragraphs, recursive, and overlap",
@@ -151,7 +187,9 @@ def splitters(size: int, overlap: int):
         "top1": f"{_top1(chunks)}/{len(QUESTIONS)}",
       }
     )
-  without, with_overlap = overlap_at_a_boundary(overlap)
+  demo_overlap = max(1, min(overlap, 25))  # the demo sentence is cut at 50 characters: overlap must be smaller
+  without, with_overlap = overlap_at_a_boundary(demo_overlap)
+  sentence = "Unused leave can be carried over, up to a maximum of 8 days, into the next year."
   kept = split_documents_keeps_metadata()
   similarity = why_split("What is the hotel limit per night?")
   sweep = size_on_real_questions((150, 300, 500, 1000))
@@ -167,6 +205,7 @@ def splitters(size: int, overlap: int):
       ],
       title=f"chunk_size={size}, overlap={overlap} (recursive only)",
     ),
+    *_highlighted(text, ways, size, overlap),
     columns(
       [code("\n\n— chunk —\n\n".join(c[:300] for c in chunks[3:5]), "text", name) for name, chunks in ways.items()],
       title="Chunks 4 and 5 of each",
@@ -232,7 +271,10 @@ def splitters(size: int, overlap: int):
       "Overlap: no sentence lost at a boundary",
       overlap_at_a_boundary,
       "With overlap, the words at each cut appear in both neighbouring chunks.",
-      [table(["Overlap", "Chunks"], [["0", " | ".join(without)], [str(overlap), " | ".join(with_overlap)]])],
+      [
+        table(["Overlap", "Chunks"], [["0", " | ".join(without)], [str(demo_overlap), " | ".join(with_overlap)]]),
+        highlight(sentence, spans_of(sentence, with_overlap), title=f"chunk_size=50, overlap={demo_overlap}"),
+      ],
     ),
     example(
       "rag.l19.5",
@@ -241,7 +283,8 @@ def splitters(size: int, overlap: int):
       "The cost: repeated text is stored and embedded twice.",
       [
         table(
-          ["Overlap", "characters stored"], [["0", sum(map(len, without))], [str(overlap), sum(map(len, with_overlap))]]
+          ["Overlap", "characters stored"],
+          [["0", sum(map(len, without))], [str(demo_overlap), sum(map(len, with_overlap))]],
         )
       ],
     ),

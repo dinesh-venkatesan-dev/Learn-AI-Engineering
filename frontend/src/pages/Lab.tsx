@@ -4,11 +4,12 @@ import { getLastLab, runLab } from "../api";
 import { CodeBlock } from "../components/CodeBlock";
 import { Markdown } from "../components/Markdown";
 import { Card, Empty, Eyebrow, Tabs } from "../components/ui";
+import { ModelCalls } from "../components/ModelCalls";
 import { ExampleView, Views } from "../components/Views";
 import { href } from "../router";
 import type { Example, LabEntry, LabInput, LabResult, ModulePage, SyllabusItem } from "../types";
 
-type Tab = "run" | "code" | "covers";
+type Tab = "run" | "code" | "covers" | "model";
 
 export function LabPage({ page, labId }: { page: ModulePage; labId: string }) {
   const index = page.labs.findIndex((l) => l.id === labId);
@@ -53,7 +54,8 @@ export function LabBody({ lab, showTabs = true }: { lab: LabEntry; showTabs?: bo
     <div className="space-y-6">
       {showTabs && <Tabs value={tab} onChange={setTab} tabs={[
         { id: "run", label: "▶ Run & learn" }, { id: "code", label: `The code (${lab.code.length})` },
-        { id: "covers", label: `What it covers (${lab.covered_items.length})` }]} />}
+        { id: "covers", label: `What it covers (${lab.covered_items.length})` },
+        ...(lab.uses_model ? [{ id: "model" as const, label: `🔍 What the model saw${result?.model_calls ? ` (${result.model_calls.total})` : ""}` }] : [])]} />}
 
       {tab === "run" && (
         <div className="space-y-6">
@@ -82,6 +84,7 @@ export function LabBody({ lab, showTabs = true }: { lab: LabEntry; showTabs?: bo
         </div>
       )}
       {tab === "covers" && <CoveredItems items={lab.covered_items} examples={result?.examples} notRunYet={!result} />}
+      {tab === "model" && <ModelCalls calls={result?.model_calls?.calls} total={result?.model_calls?.total} notRunYet={!result} />}
     </div>
   );
 }

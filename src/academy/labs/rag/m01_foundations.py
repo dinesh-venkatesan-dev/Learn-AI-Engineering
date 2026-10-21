@@ -18,6 +18,7 @@ from academy.labs.runtime import (
   example,
   lab,
   md,
+  radar,
   results,
   scorecard,
   table,
@@ -397,6 +398,7 @@ def semantic_search(query: str):
   same = list(np.argsort(-cosine)[:5]) == list(np.argsort(-dot)[:5]) == list(np.argsort(euclid)[:5])
   return [
     results(hits, title="Top 5 by cosine similarity", score_label="cosine"),
+    *_meaning_map(chunks, vectors, q, cosine),
     table(
       ["Chunk", "cosine (↑)", "dot product (↑)", "euclidean distance (↓)"],
       [
@@ -558,6 +560,42 @@ def _semantic_examples(query: str, chunks, vectors) -> list:
       "the exact number or term the embedding blurs. The third row is the exception: a paraphrase only keyword "
       "search gets right. Neither wins every time; the last lab of this module measures both on all 45.",
       [table(["Found by", "Type", "Question", "Keyword (BM25) top 1", "Semantic top 1"], duel)],
+    ),
+  ]
+
+
+def _meaning_map(chunks, vectors, q, cosine, k: int = 5) -> list:
+  """The query at the centre and every chunk at its TRUE distance (1 - cosine) from it, so the k innermost dots are
+  exactly the top k. Only the direction comes from a 2-D projection (PCA), which keeps similar chunks together."""
+  centred = vectors - vectors.mean(axis=0)
+  _, strengths, axes = np.linalg.svd(centred, full_matrices=False)
+  flat = centred @ axes[:2].T
+  angle = np.arctan2(flat[:, 1], flat[:, 0])
+  distance = 1 - cosine
+  rank = {int(i): r for r, i in enumerate(np.argsort(-cosine)[:k], start=1)}
+  points = [
+    {
+      "x": round(float(distance[i] * np.cos(angle[i])), 4),
+      "y": round(float(distance[i] * np.sin(angle[i])), 4),
+      "label": f"{c.metadata['source']} #{c.metadata['chunk_index']} · similarity {cosine[i]:.3f}",
+      "text": c.page_content,
+      "rank": rank.get(i),
+    }
+    for i, c in enumerate(chunks)
+  ]
+  low, high = float(cosine.min()), float(cosine.max())
+  rings = [round(1 - s / 10, 2) for s in range(int(np.ceil(low * 10)), int(np.floor(high * 10)) + 1)]
+  kept = float((strengths[:2] ** 2).sum() / (strengths**2).sum())
+  return [
+    radar(points, rings, title=f"Map of meaning: {len(chunks)} chunks around your query"),
+    callout(
+      f"Distance from the centre is exact: 1 − cosine similarity, so the {k} innermost dots are exactly the top {k} "
+      f"above. Similarities run from {low:.2f} to {high:.2f}: even an unrelated chunk is never at 0, so what matters "
+      "is the ranking, not the number. The direction is only approximate: squeezing 384 dimensions into a flat "
+      f"picture keeps {kept:.0%} of the variation between chunks, so two dots side by side may still be about "
+      "different things.",
+      "info",
+      "Reading the map",
     ),
   ]
 

@@ -69,12 +69,16 @@ export type View =
   | { type: "columns"; title: string; children: View[] }
   | { type: "images"; title: string; items: { src: string; caption: string }[] }
   | { type: "code"; title: string; language: string; text: string }
+  | { type: "highlight"; title: string; text: string; spans: [number, number][] }
+  | { type: "radar"; title: string; rings: number[]; points: { x: number; y: number; label: string; text: string; rank?: number | null }[] }
   | { type: "example"; point: string; title: string; explain: string; code: string; outputs: View[] };
 
 export interface MetricSpec { key: string; label: string; better: "higher" | "lower" | "none"; format: "ratio" | "percent" | "ms" | "int" | "text" | "usd"; help: string }
 
 export type Example = Extract<View, { type: "example" }>;
-export interface LabResult { lab: string; inputs: Record<string, unknown>; ms: number; views: View[]; examples?: Example[] }
+export interface ModelMessage { role: string; text: string; name?: string; tool_calls?: { name: string; args: unknown }[] }
+export interface ModelCall { model: string; messages: ModelMessage[]; reply?: ModelMessage; tokens_in?: number | null; tokens_out?: number | null; seconds?: number; error?: string }
+export interface LabResult { lab: string; inputs: Record<string, unknown>; ms: number; views: View[]; examples?: Example[]; model_calls?: { calls: ModelCall[]; total: number } }
 
 export interface Scorecard {
   at: string; config: Record<string, string | number>; k: number; questions: number; hit_reachable: number; answerable: number;
